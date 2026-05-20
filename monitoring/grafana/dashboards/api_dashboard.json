@@ -174,7 +174,7 @@
   "templating": {"list": []},
   "time": {"from": "now-15m", "to": "now"},
   "timepicker": {},
-  "timezone": "",
+  "timezone": "browser",
   "title": "LSTM Stock API — Monitoring",
   "uid": "lstm-api-dashboard",
   "version": 1,

@@ -283,6 +283,6 @@ Resultados de referência (AAPL, 2018-01-01 a 2024-07-20):
 
 [Adicionar link do vídeo aqui]
 
-## 👤 Autor
+## 👤 Autora
 
 Dione Braga — Pós-Tech Machine Learning Engineering — Fase 4
