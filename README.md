@@ -61,6 +61,8 @@ Projeto end-to-end de Deep Learning para previsão do preço de fechamento de a�
 | **Validação** | Pydantic v2 |
 | **Containerização** | Docker + Docker Compose |
 | **Monitoramento** | Prometheus + Grafana |
+| **Deploy** | Render |
+| **Modelo** | Hugging Face Model Hub |
 | **Testes** | pytest |
 
 ---
@@ -107,7 +109,9 @@ tech-challenge-fase4/
 │       └── dashboards/
 │           └── api_dashboard.json
 │
+├── requirements-api.txt           # Dependências mínimas para API
 ├── scripts/
+│   ├── download_model.py           # Baixa modelo do HF Hub
 │   ├── run_training.sh
 │   └── run_api.sh
 │
@@ -232,6 +236,8 @@ docker build -t lstm-stock-api .
 docker run -p 8000:8000 lstm-stock-api
 ```
 
+A API estará disponível em http://localhost:8000.
+
 ### Stack completa (API + Prometheus + Grafana)
 
 ```bash
@@ -263,20 +269,23 @@ Dashboard Grafana pré-configurado em `monitoring/grafana/dashboards/`.
 
 ## ☁️ Deploy em Nuvem
 
-### Hugging Face Spaces (gratuito, 16GB RAM)
+### Render (gratuito)
 
 A API está disponível em:
 
 ```
-https://dionebraga-techachallengefase4.hf.space
+https://pos-tech-mlet-fase-4.onrender.com
 ```
 
-### Render (alternativa)
+Documentação Swagger: [`https://pos-tech-mlet-fase-4.onrender.com/docs`](https://pos-tech-mlet-fase-4.onrender.com/docs)
 
-1. Crie um Web Service apontando para o repositório.
-2. Build Command: `pip install -r requirements.txt`
-3. Start Command: `uvicorn src.api.main:app --host 0.0.0.0 --port $PORT`
-4. Adicione as variáveis de ambiente do `.env`.
+Para fazer o deploy:
+1. Conecte o repositório ao Render como **Web Service**
+2. Render detecta automaticamente o **Dockerfile**
+3. Configure **Health Check Path**: `/health`
+4. O build usa `requirements-api.txt` (dependências mínimas para API)
+
+> ⚠️ No plano Free, o serviço "dorme" após 15 min de inatividade. A primeira requisição pode levar ~30s para acordar.
 
 ---
 
@@ -301,3 +310,8 @@ Resultados de referência (AAPL, 2018-01-01 a 2024-07-20):
 ## 👤 Autor
 
 Dione Braga — Pós-Tech Machine Learning Engineering — Fase 4
+
+---
+
+📦 Repositório: [github.com/dionebraga/Pos_Tech_MLET-Fase-4](https://github.com/dionebraga/Pos_Tech_MLET-Fase-4)
+🌐 API em produção: [pos-tech-mlet-fase-4.onrender.com](https://pos-tech-mlet-fase-4.onrender.com)

@@ -69,10 +69,15 @@ Mostrar:
 - Fazer 5-10 chamadas à API e ver as métricas atualizando em tempo real
 
 ### 7. Deploy em nuvem (30s)
-Abrir o link da API publicada (Render/Railway). Fazer uma chamada via Postman ou curl.
+Abrir o link da API publicada no Render:
+```bash
+curl https://pos-tech-mlet-fase-4.onrender.com/health
+```
+Mostrar o Swagger em `https://pos-tech-mlet-fase-4.onrender.com/docs`
 
 ### 8. Encerramento (15s)
-- "Código completo no GitHub: [link]"
+- "Código completo no GitHub: [github.com/dionebraga/Pos_Tech_MLET-Fase-4](https://github.com/dionebraga/Pos_Tech_MLET-Fase-4)"
+- "API em produção: [pos-tech-mlet-fase-4.onrender.com](https://pos-tech-mlet-fase-4.onrender.com)"
 - "Obrigada pela atenção!"
 
 ---
@@ -91,6 +96,6 @@ Abrir o link da API publicada (Render/Railway). Fazer uma chamada via Postman ou
 - [ ] API rodando localmente sem erros
 - [ ] Docker Compose subindo Prometheus + Grafana
 - [ ] Dashboard do Grafana com dados aparecendo
-- [ ] Deploy em nuvem ativo
-- [ ] Repositório Git público e atualizado
+- [x] Deploy em nuvem ativo (Render: https://pos-tech-mlet-fase-4.onrender.com)
+- [x] Repositório Git público e atualizado
 - [ ] README.md sem links quebrados
