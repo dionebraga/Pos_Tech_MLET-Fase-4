@@ -1,0 +1,48 @@
+
+/* =========================================
+   FIX STREAMLIT BUTTON TEXT
+========================================= */
+
+.stButton button {
+
+    color: white !important;
+
+    -webkit-text-fill-color: white !important;
+
+    opacity: 1 !important;
+
+    visibility: visible !important;
+}
+
+.stButton button span {
+
+    color: white !important;
+
+    -webkit-text-fill-color: white !important;
+
+    opacity: 1 !important;
+
+    visibility: visible !important;
+}
+
+.stButton button p {
+
+    color: white !important;
+
+    -webkit-text-fill-color: white !important;
+
+    opacity: 1 !important;
+
+    visibility: visible !important;
+}
+
+.stButton button div {
+
+    color: white !important;
+
+    -webkit-text-fill-color: white !important;
+
+    opacity: 1 !important;
+
+    visibility: visible !important;
+}

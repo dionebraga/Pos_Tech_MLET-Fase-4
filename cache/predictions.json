@@ -1,0 +1,9 @@
+[
+  {
+    "timestamp": "2026-05-12T00:06:57",
+    "symbol": "AAPL",
+    "predicted_price": 296.19,
+    "confidence": 9400,
+    "source": "API"
+  }
+]

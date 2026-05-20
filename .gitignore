@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual env
+venv/
+env/
+ENV/
+.venv
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs
+*.log
+logs/
+
+# Modelos grandes (opcional - mantenha apenas se forem versionados via Git LFS)
+# models/*.keras
+# models/*.h5
+# models/*.pkl
+
+# Dados brutos
+data/raw/
+*.csv
+
+# Docker
+.docker/

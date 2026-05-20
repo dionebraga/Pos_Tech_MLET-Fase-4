@@ -1,0 +1,20 @@
+{
+  "symbol": "AAPL",
+  "start_date": "2018-01-01",
+  "end_date": "2024-07-20",
+  "window_size": 60,
+  "lstm_units_1": 64,
+  "lstm_units_2": 64,
+  "dropout_rate": 0.2,
+  "epochs_trained": 16,
+  "batch_size": 32,
+  "learning_rate": 0.001,
+  "train_samples": 1269,
+  "test_samples": 318,
+  "metrics": {
+    "mae": 4.89536190032959,
+    "rmse": 6.484578609466553,
+    "mape": 2.5969794020056725
+  },
+  "trained_at": "2026-05-10T18:50:24.230507Z"
+}
