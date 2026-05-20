@@ -45,9 +45,8 @@ COPY --chown=app:app src/ ./src/
 COPY --chown=app:app models/ ./models/
 
 # Script para baixar o modelo do Hugging Face Model Hub
-RUN pip install huggingface_hub -q
 COPY --chown=app:app scripts/download_model.py ./scripts/download_model.py
-RUN python scripts/download_model.py
+RUN pip install huggingface_hub -q && python scripts/download_model.py && chown -R app:app models/
 
 USER app
 
