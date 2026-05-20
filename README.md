@@ -1,3 +1,14 @@
+---
+title: LSTM Stock Prediction API
+emoji: 📈
+colorFrom: blue
+colorTo: purple
+sdk: docker
+app_port: 8000
+pinned: false
+license: mit
+---
+
 # Tech Challenge Fase 4 — Previsão de Preços de Ações com LSTM
 
 Projeto end-to-end de Deep Learning para previsão do preço de fechamento de ações utilizando redes neurais **LSTM (Long Short-Term Memory)**, com pipeline completa: coleta, treinamento, API REST, containerização, deploy e monitoramento.
@@ -26,8 +37,8 @@ Projeto end-to-end de Deep Learning para previsão do preço de fechamento de a�
 │  Yahoo Finance  │─────▶│  Data Pipeline   │─────▶│  LSTM Training  │
 │   (yfinance)    │      │ (Scaler+Windows) │      │  (TensorFlow)   │
 └─────────────────┘      └──────────────────┘      └────────┬────────┘
-                                                            │
-                                                            ▼
+                                                             │
+                                                             ▼
 ┌─────────────────┐      ┌──────────────────┐      ┌─────────────────┐
 │   Prometheus    │◀─────│   FastAPI App    │◀─────│  model.keras +  │
 │   + Grafana     │      │   (/predict)     │      │   scaler.pkl    │
@@ -86,8 +97,8 @@ tech-challenge-fase4/
 │   └── 01_exploracao_e_treino.ipynb   # Notebook completo
 │
 ├── models/                       # Artefatos serializados
-│   ├── lstm_model.keras
-│   ├── scaler.pkl
+│   ├── lstm_model.keras          # (baixado do HF Hub no build)
+│   ├── scaler.pkl                # (baixado do HF Hub no build)
 │   └── metadata.json
 │
 ├── monitoring/
@@ -252,16 +263,20 @@ Dashboard Grafana pré-configurado em `monitoring/grafana/dashboards/`.
 
 ## ☁️ Deploy em Nuvem
 
-### Render (gratuito, recomendado)
+### Hugging Face Spaces (gratuito, 16GB RAM)
+
+A API está disponível em:
+
+```
+https://dionebraga-techachallengefase4.hf.space
+```
+
+### Render (alternativa)
 
 1. Crie um Web Service apontando para o repositório.
 2. Build Command: `pip install -r requirements.txt`
 3. Start Command: `uvicorn src.api.main:app --host 0.0.0.0 --port $PORT`
 4. Adicione as variáveis de ambiente do `.env`.
-
-### Railway / Fly.io
-
-Funciona via Dockerfile out-of-the-box.
 
 ---
 
@@ -283,6 +298,6 @@ Resultados de referência (AAPL, 2018-01-01 a 2024-07-20):
 
 [Adicionar link do vídeo aqui]
 
-## 👤 Autora
+## 👤 Autor
 
 Dione Braga — Pós-Tech Machine Learning Engineering — Fase 4
