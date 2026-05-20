@@ -285,4 +285,4 @@ Resultados de referência (AAPL, 2018-01-01 a 2024-07-20):
 
 ## 👤 Autor
 
-Ana Raquel — Pós-Tech Machine Learning Engineering — Fase 4
+Dione Braga — Pós-Tech Machine Learning Engineering — Fase 4
