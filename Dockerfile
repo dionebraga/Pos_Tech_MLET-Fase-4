@@ -44,19 +44,10 @@ COPY --from=builder /opt/venv /opt/venv
 COPY --chown=app:app src/ ./src/
 COPY --chown=app:app models/ ./models/
 
-# Baixa o modelo do Hugging Face Model Hub
-RUN pip install huggingface_hub -q && \
-    python -c "
-from huggingface_hub import hf_hub_download
-import os
-
-repo = 'dionebraga/lstm-stock-model'
-files = ['lstm_model.keras', 'scaler.pkl', 'metadata.json']
-for f in files:
-    path = hf_hub_download(repo_id=repo, filename=f, local_dir='models/', force_download=True)
-    print(f'Downloaded {f}')
-print('Model download complete')
-"
+# Script para baixar o modelo do Hugging Face Model Hub
+RUN pip install huggingface_hub -q
+COPY --chown=app:app scripts/download_model.py ./scripts/download_model.py
+RUN python scripts/download_model.py
 
 USER app
 
