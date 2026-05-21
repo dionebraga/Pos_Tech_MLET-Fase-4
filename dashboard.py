@@ -1007,11 +1007,13 @@ except Exception:
 model_info = fetch_model_info() if api_online else None
 if model_info and model_info.get("metrics"):
     mape = model_info["metrics"].get("mape")
-    confidence = round(100 - mape, 1) if mape else round(100 - _local_mape, 1) if _local_mape else None
+    _conf_raw = round(100 - mape, 1) if mape else round(100 - _local_mape, 1) if _local_mape else None
 elif _local_mape is not None:
-    confidence = round(100 - _local_mape, 1)
+    _conf_raw = round(100 - _local_mape, 1)
 else:
-    confidence = None
+    _conf_raw = None
+# Confiança só é exibida quando há previsão real da API
+confidence = _conf_raw if predicted_price is not None else None
 
 pred_delta = (predicted_price - last_close) / last_close * 100 if predicted_price is not None else None
 
