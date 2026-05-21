@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: lstm-stock-api
+    env: docker
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: LOG_LEVEL
+        value: INFO
+
+  - type: web
+    name: lstm-stock-dashboard
+    env: docker
+    dockerfilePath: ./Dockerfile.dashboard
+    healthCheckPath: /healthz
+    envVars:
+      - key: API_URL
+        value: https://pos-tech-mlet-fase-4.onrender.com
