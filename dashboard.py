@@ -44,6 +44,10 @@ st.set_page_config(
 
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 
+# Fusos horários
+BRT = timezone(timedelta(hours=-3))   # Brasília (UTC-3)
+ET  = timezone(timedelta(hours=-4))   # Eastern Daylight Time (NYSE, UTC-4 de mar-nov)
+
 if "active_tab" not in st.session_state:
     st.session_state.active_tab = "Trading"
 if "active_kpi" not in st.session_state:
@@ -838,15 +842,12 @@ def fetch_market_data(ticker: str, period: str, _ts: int = 0) -> Optional[pd.Dat
     return None
 
 
+@st.cache_data(ttl=20)
 def check_api_health() -> bool:
-    # Tenta 2x para tolerar cold start do Render free tier
-    for _ in range(2):
-        try:
-            if requests.get(f"{API_URL}/health", timeout=12).status_code == 200:
-                return True
-        except Exception:  # noqa: BLE001
-            pass
-    return False
+    try:
+        return requests.get(f"{API_URL}/health", timeout=10).status_code == 200
+    except Exception:  # noqa: BLE001
+        return False
 
 
 def fetch_prediction_from_api(symbol: str) -> Optional[dict]:
@@ -871,10 +872,12 @@ def fetch_model_info() -> Optional[dict]:
 
 
 def market_is_open() -> tuple[bool, str]:
-    now = datetime.now()
-    is_weekday = now.weekday() < 5
-    h = now.hour
-    if is_weekday and 9 <= h < 17:
+    now_et = datetime.now(tz=ET)
+    is_weekday = now_et.weekday() < 5
+    h, m = now_et.hour, now_et.minute
+    after_open  = (h == 9 and m >= 30) or h >= 10
+    before_close = h < 16
+    if is_weekday and after_open and before_close:
         return True, "MARKET OPEN"
     return False, "MARKET CLOSED"
 
@@ -929,8 +932,10 @@ with st.sidebar:
     )
 
     api_online = check_api_health()
-    status_class = "" if api_online else "warn"
-    status_text = "API ONLINE" if api_online else "STANDALONE"
+    if api_online:
+        status_class, status_text = "", "API ONLINE"
+    else:
+        status_class, status_text = "warn", "STANDALONE"
     st.markdown(
         f"""
         <div class="nav-label">Status do Sistema</div>
@@ -941,6 +946,8 @@ with st.sidebar:
         """,
         unsafe_allow_html=True,
     )
+    if not api_online:
+        st.caption("⚠️ API iniciando… aguarde.")
 
     st.markdown(
         """
@@ -1189,7 +1196,7 @@ st.markdown(
 # ============================================================================
 #  STATUS BAR
 # ============================================================================
-now = datetime.now()
+now = datetime.now(tz=BRT)
 is_open, market_label = market_is_open()
 market_dot_class = "" if is_open else "off"
 
@@ -1957,7 +1964,6 @@ with insights_col:
 #  FOOTER
 # ============================================================================
 
-BRT = timezone(timedelta(hours=-3))
 now = datetime.now(tz=BRT)
 
 footer_html = (
