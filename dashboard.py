@@ -839,10 +839,14 @@ def fetch_market_data(ticker: str, period: str, _ts: int = 0) -> Optional[pd.Dat
 
 
 def check_api_health() -> bool:
-    try:
-        return requests.get(f"{API_URL}/health", timeout=8).status_code == 200
-    except Exception:  # noqa: BLE001
-        return False
+    # Tenta 2x para tolerar cold start do Render free tier
+    for _ in range(2):
+        try:
+            if requests.get(f"{API_URL}/health", timeout=12).status_code == 200:
+                return True
+        except Exception:  # noqa: BLE001
+            pass
+    return False
 
 
 def fetch_prediction_from_api(symbol: str) -> Optional[dict]:
