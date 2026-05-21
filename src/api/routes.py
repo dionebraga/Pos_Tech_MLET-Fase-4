@@ -71,8 +71,8 @@ def _build_dashboard(request: Request) -> HTMLResponse:
     rmse_val = str(metrics.get("rmse", "—"))[:5] if metrics else "—"
     mape_val = str(metrics.get("mape", "—"))[:5] if metrics else "—"
     mape_num = metrics.get("mape", 0) if metrics else 0
-    symbol = md.get("symbol", "—") if md else "—"
-    window_size = md.get("window_size", "—") if md else "—"
+    symbol = str(md.get("symbol", "—")) if md else "—"
+    window_size = str(md.get("window_size", "—")) if md else "—"
     lstm_1 = str(md.get("lstm_units_1", "?")) if md else "?"
     lstm_2 = str(md.get("lstm_units_2", "?")) if md else "?"
     trained_at = md.get("trained_at", "—") if md else "—"
@@ -88,7 +88,7 @@ def _build_dashboard(request: Request) -> HTMLResponse:
     _RV = rmse_val
     _MPV = mape_val
     _MPN = mape_num
-    _W = window_size
+    _W = str(window_size)
     _L1 = lstm_1
     _L2 = lstm_2
     _TR = trained_at
