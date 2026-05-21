@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import os
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import numpy as np
@@ -948,16 +948,25 @@ api_pred = fetch_prediction_from_api(ticker) if api_online else None
 if api_pred and api_pred.get("predictions"):
     predicted_price = api_pred["predictions"][0]["predicted_price"]
 else:
-    predicted_price = last_close * 1.012
+    predicted_price = None
+
+_local_mape = None
+try:
+    with open("models/metadata.json", "r", encoding="utf-8") as _f:
+        _local_mape = json.load(_f).get("metrics", {}).get("mape")
+except Exception:
+    pass
 
 model_info = fetch_model_info() if api_online else None
 if model_info and model_info.get("metrics"):
     mape = model_info["metrics"].get("mape")
-    confidence = round(100 - mape, 1) if mape else 94
+    confidence = round(100 - mape, 1) if mape else round(100 - _local_mape, 1) if _local_mape else None
+elif _local_mape is not None:
+    confidence = round(100 - _local_mape, 1)
 else:
-    confidence = 94
+    confidence = None
 
-pred_delta = (predicted_price - last_close) / last_close * 100
+pred_delta = (predicted_price - last_close) / last_close * 100 if predicted_price is not None else None
 
 # ============================================================================
 #  TECHNICAL INDICATORS
@@ -1075,16 +1084,37 @@ def trading_insights():
 
 
 # ============================================================================
-#  TICKER TAPE
+#  TICKER TAPE — preços reais via yfinance
 # ============================================================================
-ticker_data = [
-    ("AAPL", 280.12, +3.53), ("MSFT", 521.40, +1.24), ("GOOGL", 198.55, -0.42),
-    ("AMZN", 245.80, +2.11), ("TSLA", 412.60, -1.85), ("META", 745.30, +0.92),
-    ("NVDA", 198.12, +4.21), ("BTC", 98521.0, +1.68), ("ETH", 4280.50, +2.40),
-    ("S&P500", 6122.4, +0.18), ("USD/BRL", 5.42, -0.32), ("OURO", 2782.1, +0.74),
+_TAPE_TICKERS = [
+    ("AAPL", "AAPL"), ("MSFT", "MSFT"), ("GOOGL", "GOOGL"),
+    ("AMZN", "AMZN"), ("TSLA", "TSLA"), ("META", "META"),
+    ("NVDA", "NVDA"), ("BTC", "BTC-USD"), ("ETH", "ETH-USD"),
+    ("S&P500", "^GSPC"), ("USD/BRL", "USDBRL=X"), ("OURO", "GC=F"),
 ]
+
+@st.cache_data(ttl=120, show_spinner=False)
+def _fetch_tape_prices() -> list:
+    results = []
+    for label, sym in _TAPE_TICKERS:
+        try:
+            t = yf.Ticker(sym)
+            hist = t.history(period="2d", auto_adjust=False)
+            if len(hist) >= 2:
+                c0 = float(hist["Close"].iloc[-2])
+                c1 = float(hist["Close"].iloc[-1])
+                pct = (c1 - c0) / c0 * 100
+                results.append((label, c1, pct))
+            elif len(hist) == 1:
+                c1 = float(hist["Close"].iloc[-1])
+                results.append((label, c1, 0.0))
+        except Exception:
+            pass
+    return results
+
+_tape_prices = _fetch_tape_prices()
 ticker_items = []
-for sym, px, dlt in ticker_data * 2:
+for sym, px, dlt in (_tape_prices * 2 if _tape_prices else []):
     cls = "ticker-dlt-up" if dlt >= 0 else "ticker-dlt-dn"
     sign = "+" if dlt >= 0 else ""
     ticker_items.append(
@@ -1179,7 +1209,11 @@ KPI_DETAILS = {
     "IA": {
         "tag": "Model Output",
         "title": "Confiança do Modelo LSTM",
-        "text": f"Modelo opera com <b>{confidence}%</b> de confiança (MAPE {100-confidence:.1f}%). Próxima previsão: <b>${predicted_price:.2f}</b> (D+1, {pred_delta:+.2f}%). Arquitetura LSTM 64+64 com window=60.",
+        "text": (
+            f"Modelo opera com <b>{confidence}%</b> de confiança (MAPE {100-confidence:.1f}%). "
+            f"Próxima previsão: <b>${predicted_price:.2f}</b> (D+1, {pred_delta:+.2f}%). Arquitetura LSTM 64+64 com window=60."
+        ) if (confidence is not None and predicted_price is not None and pred_delta is not None) else
+            "Modelo LSTM disponível. Conecte à API para obter previsão e métricas em tempo real.",
         "class": "warning",
     },
 }
@@ -1209,12 +1243,13 @@ kpis_data = [
      "purple", "Δ",
      75 if recent_slope > 0 else 25,
      "FORÇA · MA20/50"),
-    ("IA", "Confiança IA", f"{confidence}%",
-     "up",
-     f"MAPE {100 - confidence:.1f}%",
+    ("IA", "Confiança IA",
+     f"{confidence}%" if confidence is not None else "—",
+     "up" if confidence is not None else "neutral",
+     f"MAPE {100 - confidence:.1f}%" if confidence is not None else "API offline",
      "warning", "λ",
-     confidence,
-     f"ACURÁCIA · LSTM"),
+     confidence if confidence is not None else 0,
+     "ACURÁCIA · LSTM"),
 ]
 
 # ---------- Renderiza 4 cards em 4 colunas ----------
@@ -1501,6 +1536,7 @@ with main_col:
 
         forecast_dates = pd.bdate_range(start=df["Date"].iloc[-1] + timedelta(days=1), periods=7)
         daily_closes = df["Close"].tolist()
+        forecast_vals = None
         try:
             if api_online:
                 r = requests.post(f"{API_URL}/predict",
@@ -1509,44 +1545,46 @@ with main_col:
                 if r.status_code == 200:
                     data = r.json()
                     forecast_vals = [p["predicted_price"] for p in data["predictions"]]
-                else:
-                    forecast_vals = [last_close * (1 + 0.004 * (i + 1)) for i in range(7)]
-            else:
-                forecast_vals = [last_close * (1 + 0.004 * (i + 1)) for i in range(7)]
         except Exception:
-            forecast_vals = [last_close * (1 + 0.004 * (i + 1)) for i in range(7)]
+            forecast_vals = None
 
-        n_fc = len(forecast_dates)
-        spread = np.std(forecast_vals) * 0.5
-        upper = [v + spread * (1 + i * 0.3) for i, v in enumerate(forecast_vals)]
-        lower = [v - spread * (1 + i * 0.3) for i, v in enumerate(forecast_vals)]
+        if forecast_vals is None:
+            st.warning(
+                "Previsão LSTM indisponível — API offline ou sem resposta. "
+                "Verifique o status da API na barra lateral.",
+                icon="⚠️",
+            )
+        else:
+            spread = np.std(forecast_vals) * 0.5
+            upper = [v + spread * (1 + i * 0.3) for i, v in enumerate(forecast_vals)]
+            lower = [v - spread * (1 + i * 0.3) for i, v in enumerate(forecast_vals)]
 
-        fig_fc = go.Figure()
-        fig_fc.add_trace(go.Scatter(x=df["Date"].tail(60), y=df["Close"].tail(60),
-                                    name="Histórico", line=dict(color="#FAFAFA", width=1.8)))
-        fig_fc.add_trace(go.Scatter(x=forecast_dates, y=forecast_vals,
-                                    name="Previsão LSTM",
-                                    line=dict(color="#B794F4", width=2.5, dash="dash"),
-                                    mode="lines+markers",
-                                    marker=dict(size=6, symbol="diamond", color="#B794F4")))
-        fig_fc.add_trace(go.Scatter(
-            x=list(forecast_dates) + list(forecast_dates[::-1]),
-            y=list(upper) + list(lower[::-1]),
-            fill="toself", fillcolor="rgba(183,148,244,0.12)",
-            line=dict(color="rgba(0,0,0,0)"), name="Intervalo de Confiança",
-        ))
-        fig_fc.update_layout(
-            template="plotly_dark",
-            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-            font=dict(family="JetBrains Mono", color="#A1A1AA", size=11),
-            xaxis=dict(gridcolor="rgba(255,255,255,0.04)", showline=False, zeroline=False),
-            yaxis=dict(gridcolor="rgba(255,255,255,0.04)", showline=False, zeroline=False),
-            margin=dict(t=10, b=10, l=10, r=10), height=440,
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1,
-                        bgcolor="rgba(0,0,0,0)", font=dict(color="#71717A", size=10)),
-            hoverlabel=dict(bgcolor="#11111A", bordercolor="#27272A"),
-        )
-        st.plotly_chart(fig_fc, use_container_width=True, config={"displayModeBar": False})
+            fig_fc = go.Figure()
+            fig_fc.add_trace(go.Scatter(x=df["Date"].tail(60), y=df["Close"].tail(60),
+                                        name="Histórico", line=dict(color="#FAFAFA", width=1.8)))
+            fig_fc.add_trace(go.Scatter(x=forecast_dates, y=forecast_vals,
+                                        name="Previsão LSTM",
+                                        line=dict(color="#B794F4", width=2.5, dash="dash"),
+                                        mode="lines+markers",
+                                        marker=dict(size=6, symbol="diamond", color="#B794F4")))
+            fig_fc.add_trace(go.Scatter(
+                x=list(forecast_dates) + list(forecast_dates[::-1]),
+                y=list(upper) + list(lower[::-1]),
+                fill="toself", fillcolor="rgba(183,148,244,0.12)",
+                line=dict(color="rgba(0,0,0,0)"), name="Intervalo de Confiança",
+            ))
+            fig_fc.update_layout(
+                template="plotly_dark",
+                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(family="JetBrains Mono", color="#A1A1AA", size=11),
+                xaxis=dict(gridcolor="rgba(255,255,255,0.04)", showline=False, zeroline=False),
+                yaxis=dict(gridcolor="rgba(255,255,255,0.04)", showline=False, zeroline=False),
+                margin=dict(t=10, b=10, l=10, r=10), height=440,
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1,
+                            bgcolor="rgba(0,0,0,0)", font=dict(color="#71717A", size=10)),
+                hoverlabel=dict(bgcolor="#11111A", bordercolor="#27272A"),
+            )
+            st.plotly_chart(fig_fc, use_container_width=True, config={"displayModeBar": False})
         st.markdown("</div>", unsafe_allow_html=True)
 
     # ===== MONTE CARLO =====
@@ -1569,7 +1607,7 @@ with main_col:
         mu, sigma = returns.mean(), returns.std()
         sims = np.zeros((horizon, n_sims))
         sims[0] = last_close
-        rng = np.random.default_rng(123)
+        rng = np.random.default_rng()
         for t in range(1, horizon):
             sims[t] = sims[t-1] * np.exp((mu - sigma**2 / 2) + sigma * rng.standard_normal(n_sims))
 
@@ -1787,11 +1825,20 @@ with insights_col:
     if active == "Trading":
         insights_list = trading_insights()
     elif active == "Forecast":
+        _pred_txt = (
+            f"Previsão de <b>${predicted_price:.2f}</b> ({pred_delta:+.2f}%) para próximo dia."
+            if predicted_price is not None and pred_delta is not None
+            else "Previsão indisponível — API offline."
+        )
+        _conf_txt = (
+            f"Intervalo de confiança de <b>{confidence}%</b> nas últimas validações."
+            if confidence is not None
+            else "Métricas de confiança indisponíveis — API offline."
+        )
         insights_list = [
-            ("purple", "LSTM D+1", "agora",
-            f"Previsão de <b>${predicted_price:.2f}</b> ({pred_delta:+.2f}%) para próximo dia."),
+            ("purple", "LSTM D+1", "agora", _pred_txt),
             ("info", "Horizonte", "—", "Janela de 60 dias alimentada. Arquitetura LSTM 64+64 com dropout 0.2."),
-            ("up", "Acurácia", "validação", f"Intervalo de confiança de <b>{confidence}%</b> nas últimas validações."),
+            ("up", "Acurácia", "validação", _conf_txt),
         ]
     elif active == "Monte Carlo":
         insights_list = [
@@ -1825,6 +1872,9 @@ with insights_col:
         )
 
     # ---------- PREDICTION CARD ----------
+    _pred_value_html = f"${predicted_price:.2f}" if predicted_price is not None else "—"
+    _pred_delta_html = f"vs último close · <strong>{pred_delta:+.2f}%</strong>" if pred_delta is not None else "API offline"
+    _conf_html = f"{confidence}%" if confidence is not None else "—"
     st.markdown(
         f"""
         <div class="prediction">
@@ -1832,13 +1882,13 @@ with insights_col:
                 <div class="prediction-eyebrow">✦ LSTM PREDICTION · D+1</div>
                 <div class="prediction-row">
                     <div>
-                        <div class="prediction-value">${predicted_price:.2f}</div>
+                        <div class="prediction-value">{_pred_value_html}</div>
                         <div class="prediction-vs">
-                            vs último close · <strong>{pred_delta:+.2f}%</strong>
+                            {_pred_delta_html}
                         </div>
                     </div>
                     <div>
-                        <div class="prediction-conf">{confidence}%</div>
+                        <div class="prediction-conf">{_conf_html}</div>
                         <div class="prediction-conf-label">Confiança</div>
                     </div>
                 </div>
@@ -1853,7 +1903,8 @@ with insights_col:
 #  FOOTER
 # ============================================================================
 
-now = datetime.now()
+BRT = timezone(timedelta(hours=-3))
+now = datetime.now(tz=BRT)
 
 footer_html = (
     '<div class="footer">'

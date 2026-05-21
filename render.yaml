@@ -2,7 +2,10 @@ services:
   - type: web
     name: lstm-stock-api
     env: docker
+    region: oregon
+    plan: free
     dockerfilePath: ./Dockerfile
+    dockerContext: .
     healthCheckPath: /health
     envVars:
       - key: LOG_LEVEL
@@ -11,7 +14,10 @@ services:
   - type: web
     name: lstm-stock-dashboard
     env: docker
+    region: oregon
+    plan: free
     dockerfilePath: ./Dockerfile.dashboard
+    dockerContext: .
     healthCheckPath: /_stcore/health
     envVars:
       - key: API_URL
