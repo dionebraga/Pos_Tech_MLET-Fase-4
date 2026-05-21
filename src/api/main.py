@@ -12,6 +12,7 @@ from datetime import datetime
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 from prometheus_client import make_asgi_app
 
 from src import __version__
@@ -82,8 +83,8 @@ app = FastAPI(
     docs_url="/docs",
     lifespan=lifespan,
     contact={
-        "name": "Tech Challenge Fase 4",
-        "url": "https://github.com/anomalyco/tech-challenge-fase4",
+        "name": "Dione Braga Ferreira",
+        "url": "https://github.com/dionebraga/Pos_Tech_MLET-Fase-4",
     },
     license_info={
         "name": "MIT",
@@ -104,6 +105,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/", include_in_schema=False)
+def root():
+    return RedirectResponse(url="/docs")
 
 app.include_router(router)
 

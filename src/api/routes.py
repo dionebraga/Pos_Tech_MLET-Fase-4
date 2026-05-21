@@ -45,20 +45,6 @@ def chart_proxy(symbol: str, range: str = "3mo", interval: str = "1d"):
         raise HTTPException(status_code=502, detail=str(e))
 
 
-# ============================================================ #
-@router.get("/", tags=["root"], response_class=HTMLResponse)
-def root(request: Request):
-    try:
-        return _build_dashboard(request)
-    except Exception as exc:
-        logger.exception("Erro no GET /")
-        return HTMLResponse(
-            f"<html><body style='background:#050507;color:#FF3B3B;font-family:monospace;padding:40px;'>"
-            f"<h2>Internal Server Error</h2><pre>{exc}</pre></body></html>",
-            status_code=500,
-        )
-
-
 def _build_dashboard(request: Request) -> HTMLResponse:
     predictor = getattr(request.app.state, "predictor", None)
     md = predictor.metadata if predictor else {}
