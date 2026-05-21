@@ -40,9 +40,12 @@ WORKDIR /app
 # Copia o venv pronto
 COPY --from=builder /opt/venv /opt/venv
 
-# Copia o código e os artefatos do modelo
+# Copia o código
 COPY --chown=app:app src/ ./src/
-COPY --chown=app:app models/ ./models/
+COPY --chown=app:app scripts/ ./scripts/
+
+# Baixa artefatos do Hugging Face Hub no build (sem auth — repo público)
+RUN mkdir -p models && python scripts/download_model.py && chown -R app:app models/
 
 USER app
 
