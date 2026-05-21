@@ -523,23 +523,244 @@ def health_check(request: Request):
     now = datetime.now()
     uptime_seconds = (now - getattr(request.app.state, "_started_at", now)).seconds if hasattr(request.app.state, "_started_at") else 0
 
-    return {
-        "status": engine_status,
-        "model_loaded": predictor is not None,
-        "version": __version__,
-        "model": {
-            "symbol": md.get("symbol", "—") if md else "—",
-            "metrics": {
-                "mae": metrics_data.get("mae"),
-                "rmse": metrics_data.get("rmse"),
-                "mape": metrics_data.get("mape"),
-            } if metrics_data else None,
-            "window_size": md.get("window_size") if md else None,
-            "trained_at": md.get("trained_at") if md else None,
-        } if predictor else None,
-        "uptime_seconds": uptime_seconds,
-        "timestamp": now.isoformat(),
-    }
+    query_format = request.query_params.get("format", "")
+    accept = request.headers.get("accept", "")
+    if query_format == "json" or "text/html" not in accept:
+        return {
+            "status": engine_status,
+            "model_loaded": predictor is not None,
+            "version": __version__,
+            "model": {
+                "symbol": md.get("symbol", "—") if md else "—",
+                "metrics": {
+                    "mae": metrics_data.get("mae"),
+                    "rmse": metrics_data.get("rmse"),
+                    "mape": metrics_data.get("mape"),
+                } if metrics_data else None,
+                "window_size": md.get("window_size") if md else None,
+                "trained_at": md.get("trained_at") if md else None,
+            } if predictor else None,
+            "uptime_seconds": uptime_seconds,
+            "timestamp": now.isoformat(),
+        }
+
+    status_color = "#00FF88" if predictor else "#FF3B3B"
+    status_text = "ONLINE" if predictor else "DEGRADED"
+    symbol = md.get("symbol", "—") if md else "—"
+    trained_at = md.get("trained_at", "—") if md else "—"
+    window_size = md.get("window_size", "—") if md else "—"
+
+    mae_raw = metrics_data.get("mae") if metrics_data else None
+    rmse_raw = metrics_data.get("rmse") if metrics_data else None
+    mape_raw = metrics_data.get("mape") if metrics_data else None
+    mae_v = f"{mae_raw:.4f}" if mae_raw is not None else "—"
+    rmse_v = f"{rmse_raw:.4f}" if rmse_raw is not None else "—"
+    mape_v = f"{mape_raw:.2f}" if mape_raw is not None else "—"
+
+    mae_bar = f"{min(100, max(5, int(mae_raw * 10)))}" if mae_raw is not None else "0"
+    rmse_bar = f"{min(100, max(5, int(rmse_raw * 8)))}" if rmse_raw is not None else "0"
+    mape_bar = f"{min(100, max(5, int(mape_raw * 12)))}" if mape_raw is not None else "0"
+
+    uptime_str = f"{uptime_seconds // 3600}h {(uptime_seconds % 3600) // 60}m {uptime_seconds % 60}s"
+
+    return HTMLResponse(f"""<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>AI Quant · Health</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * {{ margin:0; padding:0; box-sizing:border-box; }}
+  body {{
+    background:#050507; color:#A1A1AA; font-family:'JetBrains Mono',monospace;
+    min-height:100vh; padding:32px 20px; display:flex; flex-direction:column; align-items:center;
+    background-image:
+      radial-gradient(ellipse at 20% 50%, rgba(0,255,136,0.03) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 50%, rgba(183,148,244,0.03) 0%, transparent 50%);
+  }}
+  body::before {{
+    content:''; position:fixed; inset:0; pointer-events:none;
+    background:repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,136,0.008) 2px, rgba(0,255,136,0.008) 4px);
+    z-index:9999;
+  }}
+  .container {{ max-width:680px; width:100%; }}
+  .prompt {{ font-size:0.6rem; color:#3F3F46; margin-bottom:24px; display:flex; align-items:center; gap:8px; }}
+  .prompt-sym {{ color:#00FF88; }}
+  .cursor {{ animation:blink 1s step-end infinite; }}
+  @keyframes blink {{ 50%{{opacity:0}} }}
+
+  .card {{
+    background:#0A0A0F; border:1px solid #18181B; border-radius:8px;
+    padding:24px; margin-bottom:16px;
+  }}
+  .card-title {{ font-size:0.55rem; color:#52525B; text-transform:uppercase; letter-spacing:0.12em; margin-bottom:16px; }}
+
+  .status-row {{ display:flex; align-items:center; gap:12px; margin-bottom:24px; }}
+  .status-dot {{ width:12px; height:12px; border-radius:50%; background:{status_color};
+    box-shadow:0 0 16px {status_color}; animation:pulse-dot 2s ease-in-out infinite; }}
+  @keyframes pulse-dot {{ 0%,100%{{opacity:1}} 50%{{opacity:0.3}} }}
+  .status-label {{ font-size:1.1rem; font-weight:600; color:{status_color}; }}
+  .status-sub {{ font-size:0.65rem; color:#52525B; }}
+
+  .grid {{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }}
+  .field {{}}
+  .field-label {{ font-size:0.5rem; color:#3F3F46; text-transform:uppercase; letter-spacing:0.12em; margin-bottom:4px; }}
+  .field-value {{ font-size:0.85rem; color:#FAFAFA; font-weight:500; }}
+  .field-value.green {{ color:#00FF88; }}
+  .field-value.blue {{ color:#5B9DFF; }}
+  .field-value.purple {{ color:#B794F4; }}
+  .field-value.yellow {{ color:#FBBF24; }}
+  .field-value.orange {{ color:#FF9500; }}
+  .field-value.red {{ color:#FF3B3B; }}
+
+  .bar-group {{ margin-top:16px; }}
+  .bar-row {{ display:flex; align-items:center; gap:12px; margin-bottom:8px; }}
+  .bar-label {{ font-size:0.55rem; color:#52525B; width:60px; flex-shrink:0; }}
+  .bar-track {{ flex:1; height:6px; background:#0E0E15; border-radius:3px; overflow:hidden; }}
+  .bar-fill {{ height:100%; border-radius:3px; }}
+
+  .meta {{ font-size:0.6rem; color:#3F3F46; text-align:center; margin-top:24px; }}
+  .meta a {{ color:#52525B; text-decoration:none; }}
+  .meta a:hover {{ color:#A1A1AA; }}
+
+  .section {{ margin-top:20px; }}
+  .section-title {{ font-size:0.55rem; color:#52525B; text-transform:uppercase; letter-spacing:0.12em; margin-bottom:12px; }}
+
+  .endpoints {{ background:#0A0A0F; border:1px solid #18181B; border-radius:8px; overflow:hidden; }}
+  .endpoint-row {{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:10px 16px; border-bottom:1px solid #18181B; font-size:0.72rem;
+    transition:background .2s; text-decoration:none; color:inherit;
+  }}
+  .endpoint-row:last-child {{ border-bottom:none; }}
+  .endpoint-row:hover {{ background:#0E0E15; }}
+  .endpoint-method {{
+    display:inline-block; width:44px; padding:2px 0; text-align:center;
+    border-radius:4px; font-size:0.55rem; font-weight:700;
+  }}
+  .get {{ background:rgba(97,175,254,0.15); color:#61AFFE; }}
+  .endpoint-path {{ color:#FAFAFA; font-weight:500; margin-left:10px; }}
+  .endpoint-desc {{ color:#52525B; font-size:0.6rem; margin-left:auto; }}
+
+  .json-btn {{
+    display:inline-block; margin-top:12px; padding:6px 14px;
+    background:transparent; border:1px solid #18181B; border-radius:4px;
+    color:#52525B; font-family:inherit; font-size:0.6rem; cursor:pointer;
+    text-decoration:none; transition:all .2s;
+  }}
+  .json-btn:hover {{ border-color:#333; color:#A1A1AA; }}
+
+  @media (max-width:500px) {{ .grid {{ grid-template-columns:1fr; }} }}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="prompt">
+    <span class="prompt-sym">►</span>
+    <span>healthcheck — {now.strftime('%Y-%m-%d %H:%M:%S')}Z</span>
+    <span class="cursor">▌</span>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Status do Sistema</div>
+    <div class="status-row">
+      <span class="status-dot"></span>
+      <div>
+        <div class="status-label">{status_text}</div>
+        <div class="status-sub">v{__version__} · {uptime_str} de atividade</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="field">
+        <div class="field-label">Modelo</div>
+        <div class="field-value green">{'CARREGADO' if predictor else 'NÃO DISPONÍVEL'}</div>
+      </div>
+      <div class="field">
+        <div class="field-label">Símbolo</div>
+        <div class="field-value blue">{symbol}</div>
+      </div>
+      <div class="field">
+        <div class="field-label">Janela (window)</div>
+        <div class="field-value purple">{window_size}</div>
+      </div>
+      <div class="field">
+        <div class="field-label">Treinado em</div>
+        <div class="field-value" style="font-size:0.7rem;">{trained_at[:19] if trained_at != '—' else '—'}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Métricas do Modelo</div>
+    <div class="grid">
+      <div class="field">
+        <div class="field-label">MAE</div>
+        <div class="field-value orange">{mae_v}</div>
+      </div>
+      <div class="field">
+        <div class="field-label">RMSE</div>
+        <div class="field-value yellow">{rmse_v}</div>
+      </div>
+      <div class="field">
+        <div class="field-label">MAPE</div>
+        <div class="field-value green">{mape_v}%</div>
+      </div>
+      <div class="field">
+        <div class="field-label">Acurácia</div>
+        <div class="field-value green">{f'{100 - mape_raw:.2f}%' if mape_raw is not None else '—'}</div>
+      </div>
+    </div>
+
+    <div class="bar-group">
+      <div class="bar-row">
+        <span class="bar-label">MAE</span>
+        <div class="bar-track"><div class="bar-fill" style="width:{mae_bar}%;background:#FF9500;"></div></div>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">RMSE</span>
+        <div class="bar-track"><div class="bar-fill" style="width:{rmse_bar}%;background:#FBBF24;"></div></div>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">MAPE</span>
+        <div class="bar-track"><div class="bar-fill" style="width:{mape_bar}%;background:#00FF88;"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Endpoints</div>
+    <div class="endpoints">
+      <a class="endpoint-row" href="/">
+        <span><span class="endpoint-method get">GET</span><span class="endpoint-path">/</span></span>
+        <span class="endpoint-desc">Dashboard principal</span>
+      </a>
+      <a class="endpoint-row" href="/model/info">
+        <span><span class="endpoint-method get">GET</span><span class="endpoint-path">/model/info</span></span>
+        <span class="endpoint-desc">Metadados do treinamento</span>
+      </a>
+      <a class="endpoint-row" href="/docs">
+        <span><span class="endpoint-method" style="background:rgba(255,255,255,0.06);color:#888;">DOC</span><span class="endpoint-path">Swagger UI</span></span>
+        <span class="endpoint-desc">Documentação interativa</span>
+      </a>
+      <a class="endpoint-row" href="/metrics">
+        <span><span class="endpoint-method get">GET</span><span class="endpoint-path">/metrics</span></span>
+        <span class="endpoint-desc">Métricas Prometheus</span>
+      </a>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:16px;">
+    <a class="json-btn" href="/health?format=json">⎔ Ver JSON</a>
+  </div>
+
+  <div class="meta">
+    <a href="/">⟨⟩ AI Quant Terminal</a> · <a href="/docs">API Docs</a> · {now.strftime('%Y-%m-%d %H:%M:%S')}Z
+  </div>
+</div>
+</body>
+</html>""")
 
 
 # ============================================================ #
