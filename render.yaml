@@ -12,7 +12,7 @@ services:
     name: lstm-stock-dashboard
     env: docker
     dockerfilePath: ./Dockerfile.dashboard
-    healthCheckPath: /healthz
+    healthCheckPath: /_stcore/health
     envVars:
       - key: API_URL
         value: https://pos-tech-mlet-fase-4.onrender.com
