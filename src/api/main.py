@@ -75,7 +75,7 @@ async def lifespan(app: FastAPI):
 # App
 # ---------------------------------------------------------------------------
 app = FastAPI(
-    title="AI Quant • LSTM API",
+    title="Tech Challenge Fase 4 - LSTM API",
     description="Previsão de preços de ações com LSTM · FastAPI · TensorFlow",
     summary="Stock price prediction API powered by LSTM deep learning",
     version=__version__,

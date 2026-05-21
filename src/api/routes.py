@@ -595,19 +595,18 @@ def health_check(request: Request):
 
 
 # ============================================================ #
-@router.get("/model/info", response_model=ModelInfoResponse, tags=["model"])
+@router.get("/model/info", tags=["model"])
 def model_info(request: Request):
     predictor = request.app.state.predictor
     if predictor is None:
         raise HTTPException(status_code=503, detail="Modelo não carregado.")
 
     md = predictor.metadata
-
     query_format = request.query_params.get("format", "")
     accept = request.headers.get("accept", "")
-    if query_format == "json":
-        pass  # return JSON below
-    elif "text/html" in accept:
+
+    want_json = query_format == "json" or "application/json" in accept
+    if not want_json:
         metrics = md.get("metrics", {})
         mae = metrics.get("mae", "—")
         rmse = metrics.get("rmse", "—")
