@@ -49,11 +49,6 @@ if "active_tab" not in st.session_state:
 if "active_kpi" not in st.session_state:
     st.session_state.active_kpi = None
 
-_kpi_click = st.query_params.get("kpi_key")
-if _kpi_click:
-    st.session_state.active_kpi = None if st.session_state.active_kpi == _kpi_click else _kpi_click
-    st.query_params.clear()
-
 
 # ============================================================================
 #  CSS — Premium Terminal aesthetic
@@ -1273,14 +1268,15 @@ for col, (key, label, value, delta_class, delta_text, css_class, icon, fill_pct,
         st.markdown(card_html, unsafe_allow_html=True)
 
 # ---------- Botões de ação abaixo dos cards ----------
-btn_items = "".join(
-    f'<button class="kpi-btn{" active" if st.session_state.active_kpi == key else ""}" '
-    f'onclick="window.location.search=\'?kpi_key={key}\'">'
-    f'{"◆ FECHAR" if st.session_state.active_kpi == key else "◇ DETALHES"} {key.upper()}'
-    f'</button>'
-    for key, *_ in kpis_data
-)
-st.markdown(f'<div class="kpi-actions-row">{btn_items}</div>', unsafe_allow_html=True)
+btn_cols = st.columns(4, gap="small")
+for col, (key, *_) in zip(btn_cols, kpis_data):
+    with col:
+        is_active = st.session_state.active_kpi == key
+        label = f"◆ FECHAR {key.upper()}" if is_active else f"◇ DETALHES {key.upper()}"
+        if st.button(label, key=f"kpi_btn_{key}", use_container_width=True,
+                     type="primary" if is_active else "secondary"):
+            st.session_state.active_kpi = None if is_active else key
+            st.rerun()
 
 # ---------- DETAIL PANEL ----------
 if st.session_state.active_kpi:
