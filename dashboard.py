@@ -30,7 +30,6 @@ try:
 except ImportError:
     HAS_CURL_CFFI = False
 
-IS_DEMO_MODE = False  # set to True when using synthetic data
 
 
 # ============================================================================
@@ -733,56 +732,63 @@ st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 # ============================================================================
 #  HELPERS
 # ============================================================================
-_BASE_PRICES: dict[str, float] = {
-    "AAPL": 195.0, "MSFT": 415.0, "GOOGL": 175.0, "AMZN": 200.0,
-    "TSLA": 250.0, "META": 530.0, "NVDA": 880.0, "PETR4.SA": 38.0,
-    "VALE3.SA": 62.0, "ITUB4.SA": 34.0,
-}
-_PERIOD_DAYS: dict[str, int] = {
-    "1mo": 22, "3mo": 66, "6mo": 130, "1y": 252, "2y": 504, "5y": 1260,
-}
+def _parse_yf_v8_chart(payload: dict) -> Optional[pd.DataFrame]:
+    """Parse Yahoo Finance v8 chart JSON → OHLCV DataFrame."""
+    try:
+        result = payload["chart"]["result"][0]
+        timestamps = result["timestamp"]
+        quote = result["indicators"]["quote"][0]
+        n = len(timestamps)
+        _f = lambda v: float(v) if v is not None else float("nan")
+        df = pd.DataFrame({
+            "Date": pd.to_datetime([pd.Timestamp(t, unit="s").date() for t in timestamps]),
+            "Open":   [_f(v) for v in quote.get("open",   [None] * n)],
+            "High":   [_f(v) for v in quote.get("high",   [None] * n)],
+            "Low":    [_f(v) for v in quote.get("low",    [None] * n)],
+            "Close":  [_f(v) for v in quote.get("close",  [None] * n)],
+            "Volume": [float(v) if v is not None else 0.0 for v in quote.get("volume", [0] * n)],
+        }).dropna(subset=["Close"])
+        return df if not df.empty else None
+    except Exception:
+        return None
 
 
-def generate_synthetic_data(ticker: str, period: str) -> pd.DataFrame:
-    n = _PERIOD_DAYS.get(period, 130)
-    base = _BASE_PRICES.get(ticker, 100.0)
-    seed = sum(ord(c) for c in ticker)
-    rng = np.random.default_rng(seed)
-    dates = pd.bdate_range(end=pd.Timestamp.today(), periods=n)
-    ret = rng.normal(0.0003, 0.015, n)
-    close = base * np.cumprod(1 + ret)
-    spread = np.abs(rng.normal(0.005, 0.006, n))
-    return pd.DataFrame({
-        "Date": dates,
-        "Open": close * (1 + rng.normal(0, 0.004, n)),
-        "High": close * (1 + spread),
-        "Low": close * (1 - spread),
-        "Close": close,
-        "Volume": rng.integers(8_000_000, 60_000_000, n).astype(float),
-        "Dividends": 0.0,
-        "Stock Splits": 0.0,
-    })
+@st.cache_data(ttl=60)
+def fetch_market_data(ticker: str, period: str, _ts: int = 0) -> Optional[pd.DataFrame]:
+    """Fetch real OHLCV data. API proxy → yfinance+curl_cffi → yfinance direto."""
+    # 1. API proxy — funciona no Render pois a API acessa o Yahoo Finance normalmente
+    try:
+        r = requests.get(
+            f"{API_URL}/api/chart/{ticker}",
+            params={"range": period, "interval": "1d"},
+            timeout=15,
+        )
+        if r.status_code == 200:
+            df = _parse_yf_v8_chart(r.json())
+            if df is not None:
+                return df
+    except Exception:
+        pass
 
-
-@st.cache_data(ttl=30)
-def fetch_market_data(ticker: str, period: str, _ts: int = 0) -> tuple[pd.DataFrame, bool]:
-    """Returns (dataframe, is_synthetic). Never raises — falls back to synthetic data."""
+    # 2. yfinance com curl_cffi (impersonação de browser)
     if HAS_CURL_CFFI:
         try:
             session = cffi_requests.Session(impersonate="chrome")
             df = yf.Ticker(ticker, session=session).history(period=period, auto_adjust=False)
             if not df.empty:
-                return df.reset_index(), False
+                return df.reset_index()
         except Exception:
             pass
-    # Fallback: try yfinance without curl_cffi session
+
+    # 3. yfinance direto
     try:
         df = yf.Ticker(ticker).history(period=period, auto_adjust=False)
         if not df.empty:
-            return df.reset_index(), False
+            return df.reset_index()
     except Exception:
         pass
-    return generate_synthetic_data(ticker, period), True
+
+    return None
 
 
 def check_api_health() -> bool:
@@ -914,17 +920,14 @@ if refresh_rate != "Off":
 # ============================================================================
 #  DADOS
 # ============================================================================
-_data_ts = int(datetime.now().timestamp() // 15)
-df, IS_DEMO_MODE = fetch_market_data(ticker, period, _ts=_data_ts)
-if IS_DEMO_MODE:
-    st.markdown(
-        '<div style="background:rgba(255,149,0,0.10);border:1px solid rgba(255,149,0,0.3);'
-        'border-radius:8px;padding:8px 16px;font-family:\'JetBrains Mono\',monospace;'
-        'font-size:0.75rem;color:#FF9500;margin-bottom:12px;">'
-        '⚡ MODO DEMO — dados sintéticos (Yahoo Finance indisponível neste ambiente)'
-        '</div>',
-        unsafe_allow_html=True,
+_data_ts = int(datetime.now().timestamp() // 60)
+df = fetch_market_data(ticker, period, _ts=_data_ts)
+if df is None or df.empty:
+    st.error(
+        f"❌ Dados indisponíveis para **{ticker}**. "
+        f"Verifique se a API está online em `{API_URL}` ou tente outro ativo."
     )
+    st.stop()
 
 last_close = float(df["Close"].iloc[-1])
 prev_close = float(df["Close"].iloc[-2]) if len(df) > 1 else last_close
@@ -1312,7 +1315,7 @@ with main_col:
         with st.spinner("Analisando ativos..."):
             for sym in watchlist_tickers:
                 try:
-                    wdf, _ = fetch_market_data(sym, "3mo", _ts=_data_ts)
+                    wdf = fetch_market_data(sym, "3mo", _ts=_data_ts)
                     if wdf is None or wdf.empty:
                         continue
                     wclose = float(wdf["Close"].iloc[-1])
