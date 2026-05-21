@@ -17,7 +17,7 @@ from prometheus_client import make_asgi_app
 
 from src import __version__
 from src.api.routes import router
-from src.api.monitoring import MODEL_LOADED
+from src.api.monitoring import MODEL_LOADED, initialize_metrics
 from src.config import settings
 from src.predict import StockPredictor
 
@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Executado no startup (yield) e no shutdown."""
     app.state._started_at = datetime.now()
+    initialize_metrics()
     try:
         predictor = StockPredictor(
             model_path=settings.MODEL_PATH,

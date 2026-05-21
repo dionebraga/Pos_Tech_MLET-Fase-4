@@ -39,6 +39,19 @@ LAST_PREDICTION_VALUE = Gauge(
 )
 
 
+def initialize_metrics(symbols: list[str] | None = None) -> None:
+    """Pre-inicializa label combinations para que as métricas apareçam no /metrics
+    mesmo antes da primeira previsão (evita 'No data' no Grafana)."""
+    for ep in ("/predict", "/predict/symbol"):
+        PREDICTION_DURATION.labels(endpoint=ep)
+        PREDICTIONS_TOTAL.labels(endpoint=ep, status="success")
+        PREDICTIONS_TOTAL.labels(endpoint=ep, status="error")
+    PREDICTION_ERRORS.labels(error_type="ValueError")
+    PREDICTION_ERRORS.labels(error_type="Exception")
+    for sym in (symbols or ["AAPL", "GOOGL", "MSFT", "AMZN", "NVDA"]):
+        LAST_PREDICTION_VALUE.labels(symbol=sym)
+
+
 class TrackPrediction:
     """Context manager para medir tempo e registrar métricas de previsão."""
 
