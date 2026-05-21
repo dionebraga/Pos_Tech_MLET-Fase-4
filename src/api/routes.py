@@ -48,6 +48,18 @@ def chart_proxy(symbol: str, range: str = "3mo", interval: str = "1d"):
 # ============================================================ #
 @router.get("/", tags=["root"], response_class=HTMLResponse)
 def root(request: Request):
+    try:
+        return _build_dashboard(request)
+    except Exception as exc:
+        logger.exception("Erro no GET /")
+        return HTMLResponse(
+            f"<html><body style='background:#050507;color:#FF3B3B;font-family:monospace;padding:40px;'>"
+            f"<h2>Internal Server Error</h2><pre>{exc}</pre></body></html>",
+            status_code=500,
+        )
+
+
+def _build_dashboard(request: Request) -> HTMLResponse:
     predictor = getattr(request.app.state, "predictor", None)
     md = predictor.metadata if predictor else {}
     metrics = md.get("metrics", {}) if md else {}
@@ -64,6 +76,8 @@ def root(request: Request):
     lstm_1 = str(md.get("lstm_units_1", "?")) if md else "?"
     lstm_2 = str(md.get("lstm_units_2", "?")) if md else "?"
     trained_at = md.get("trained_at", "—") if md else "—"
+    if trained_at != "—":
+        trained_at = str(trained_at)[:10]
 
     # Build HTML — use string replacement to avoid f-string brace hell
     _SC = status_color
@@ -77,7 +91,7 @@ def root(request: Request):
     _W = window_size
     _L1 = lstm_1
     _L2 = lstm_2
-    _TR = trained_at[:10] if trained_at != '—' else '—'
+    _TR = trained_at
     _VER = __version__
     _NOW = datetime.now().strftime('%Y-%m-%d %H:%M')
     _ACC = f'{100 - mape_num:.1f}%' if mape_num > 0 else '—'
@@ -320,6 +334,13 @@ load(ar);
         .replace('__ACC__', _ACC)
     )
     return HTMLResponse(html)
+
+
+# ============================================================ #
+@router.get("/healthz", tags=["health"])
+def healthz():
+    """Render's routing layer probes this endpoint for readiness."""
+    return {"status": "ok"}
 
 
 # ============================================================ #
@@ -575,12 +596,90 @@ def health_check(request: Request):
 
 # ============================================================ #
 @router.get("/model/info", response_model=ModelInfoResponse, tags=["model"])
-def model_info(request: Request) -> ModelInfoResponse:
+def model_info(request: Request):
     predictor = request.app.state.predictor
     if predictor is None:
         raise HTTPException(status_code=503, detail="Modelo não carregado.")
 
     md = predictor.metadata
+
+    query_format = request.query_params.get("format", "")
+    accept = request.headers.get("accept", "")
+    if query_format == "json":
+        pass  # return JSON below
+    elif "text/html" in accept:
+        metrics = md.get("metrics", {})
+        mae = metrics.get("mae", "—")
+        rmse = metrics.get("rmse", "—")
+        mape = metrics.get("mape", "—")
+        trained_at_str = str(md.get("trained_at", "—"))[:19]
+        lstm_str = f"{md.get('lstm_units_1', '?')}+{md.get('lstm_units_2', '?')}"
+
+        mae_v = f"{mae:.4f}" if isinstance(mae, (int, float)) else "—"
+        rmse_v = f"{rmse:.4f}" if isinstance(rmse, (int, float)) else "—"
+        mape_v = f"{mape:.2f}%" if isinstance(mape, (int, float)) else "—"
+
+        return HTMLResponse(f"""<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>AI Quant · Model Info</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{{margin:0;padding:0;box-sizing:border-box}}
+body{{background:#050507;color:#A1A1AA;font-family:'JetBrains Mono',monospace;min-height:100vh;padding:32px 20px;display:flex;flex-direction:column;align-items:center}}
+body::before{{content:'';position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,136,0.008) 2px,rgba(0,255,136,0.008) 4px);z-index:9999}}
+.container{{max-width:680px;width:100%}}
+.prompt{{font-size:0.6rem;color:#3F3F46;margin-bottom:24px;display:flex;align-items:center;gap:8px}}
+.prompt-sym{{color:#00FF88}}
+.cursor{{animation:blink 1s step-end infinite}}
+@keyframes blink{{50%{{opacity:0}}}}
+.card{{background:#0A0A0F;border:1px solid #18181B;border-radius:8px;padding:24px;margin-bottom:16px}}
+.card-title{{font-size:0.55rem;color:#52525B;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px}}
+.grid{{display:grid;grid-template-columns:1fr 1fr;gap:12px}}
+.field{{}}
+.field-label{{font-size:0.5rem;color:#3F3F46;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px}}
+.field-value{{font-size:0.85rem;color:#FAFAFA;font-weight:500}}
+.field-value.green{{color:#00FF88}}
+.field-value.blue{{color:#5B9DFF}}
+.field-value.purple{{color:#B794F4}}
+.field-value.orange{{color:#FF9500}}
+.meta{{font-size:0.6rem;color:#3F3F46;text-align:center;margin-top:24px}}
+.meta a{{color:#52525B;text-decoration:none}}
+.meta a:hover{{color:#A1A1AA}}
+.json-btn{{display:inline-block;margin-top:12px;padding:6px 14px;background:transparent;border:1px solid #18181B;border-radius:4px;color:#52525B;font-family:inherit;font-size:0.6rem;cursor:pointer;text-decoration:none;transition:all .2s}}
+.json-btn:hover{{border-color:#333;color:#A1A1AA}}
+@media(max-width:500px){{.grid{{grid-template-columns:1fr}}}}
+</style>
+</head>
+<body>
+<div class=container>
+<div class=prompt><span class=prompt-sym>►</span><span>model/info — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}Z</span><span class=cursor>▌</span></div>
+<div class=card>
+<div class=card-title>Modelo LSTM</div>
+<div class=grid>
+<div class=field><div class=field-label>Símbolo</div><div class=field-value green>{md.get("symbol", "?")}</div></div>
+<div class=field><div class=field-label>Arquitetura</div><div class=field-value purple>{lstm_str}</div></div>
+<div class=field><div class=field-label>Window</div><div class=field-value blue>{md.get("window_size", "?")}</div></div>
+<div class=field><div class=field-label>Dropout</div><div class=field-value>{md.get("dropout_rate", "?")}</div></div>
+<div class=field><div class=field-label>Epochs</div><div class=field-value>{md.get("epochs_trained", "?")}</div></div>
+<div class=field><div class=field-label>Amostras (treino)</div><div class=field-value>{md.get("train_samples", "?")}</div></div>
+<div class=field><div class=field-label>Amostras (teste)</div><div class=field-value>{md.get("test_samples", "?")}</div></div>
+<div class=field><div class=field-label>Treinado em</div><div class=field-value style=font-size:0.7rem;>{trained_at_str}</div></div>
+</div></div>
+<div class=card>
+<div class=card-title>Métricas</div>
+<div class=grid>
+<div class=field><div class=field-label>MAE</div><div class=field-value orange>{mae_v}</div></div>
+<div class=field><div class=field-label>RMSE</div><div class=field-value>{rmse_v}</div></div>
+<div class=field><div class=field-label>MAPE</div><div class=field-value green>{mape_v}</div></div>
+<div class=field><div class=field-label>Acurácia</div><div class=field-value green>{f'{100 - mape:.2f}%' if isinstance(mape, (int, float)) else '—'}</div></div>
+</div></div>
+<div style=text-align:center;margin-top:8px;><a class=json-btn href=/model/info?format=json>⎔ Ver JSON</a></div>
+<div class=meta><a href=/>⟨⟩ AI Quant Terminal</a> · <a href=/docs>API Docs</a> · {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}Z</div>
+</div>
+</body>
+</html>""")
+
     return ModelInfoResponse(
         symbol_trained_on=md.get("symbol", "?"),
         window_size=md["window_size"],
