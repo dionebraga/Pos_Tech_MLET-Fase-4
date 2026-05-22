@@ -110,9 +110,9 @@ O sistema é composto por dois serviços independentes em produção:
 
 | Camada | Tecnologia | Versão |
 |--------|-----------|--------|
-| **Coleta de dados** | yfinance + curl_cffi | ≥ 0.2.50 |
+| **Coleta de dados** | yfinance | ≥ 1.x |
 | **Processamento** | NumPy, Pandas, scikit-learn | latest |
-| **Deep Learning** | TensorFlow / Keras | 2.x |
+| **Deep Learning** | TensorFlow / Keras | 2.17 / 3.x |
 | **API** | FastAPI + Uvicorn | latest |
 | **Validação** | Pydantic v2 | v2 |
 | **Dashboard** | Streamlit | latest |
@@ -120,7 +120,6 @@ O sistema é composto por dois serviços independentes em produção:
 | **Containerização** | Docker + Docker Compose | — |
 | **Monitoramento** | Prometheus + Grafana | — |
 | **Deploy** | Render (Free Tier) | — |
-| **Armazenamento do modelo** | Hugging Face Hub (artefatos: `.keras`, `.pkl`) | — |
 | **Testes** | pytest | latest |
 
 ---
@@ -353,12 +352,13 @@ docker run -p 8501:8501 -e API_URL=http://host.docker.internal:8000 lstm-stock-d
 docker-compose up -d
 ```
 
-| Serviço | URL Local |
-|---------|-----------|
-| API | http://localhost:8000 |
-| Dashboard | http://localhost:8501 |
-| Prometheus | http://localhost:9090 |
-| Grafana | http://localhost:3000 (admin/admin) |
+| Serviço | URL Local | URL Produção |
+|---------|-----------|--------------|
+| API FastAPI | [localhost:8000](http://localhost:8000) | [pos-tech-mlet-fase-4.onrender.com](https://pos-tech-mlet-fase-4.onrender.com) |
+| Swagger UI | [localhost:8000/docs](http://localhost:8000/docs) | [pos-tech-mlet-fase-4.onrender.com/docs](https://pos-tech-mlet-fase-4.onrender.com/docs) |
+| Dashboard Streamlit | [localhost:8501](http://localhost:8501) | [lstm-stock-dashboard.onrender.com](https://lstm-stock-dashboard.onrender.com) |
+| Prometheus | [localhost:9090](http://localhost:9090) | — (local only) |
+| Grafana | [localhost:3000](http://localhost:3000) `admin/admin` | — (local only) |
 
 ---
 
@@ -386,7 +386,7 @@ O projeto utiliza **Render** com dois serviços independentes definidos em `rend
 
 | Serviço | Nome | URL de Produção |
 |---------|------|-----------------|
-| API FastAPI | `lstm-stock-api` | [lstm-stock-api.onrender.com](https://lstm-stock-api.onrender.com) |
+| API FastAPI | `pos-tech-mlet-fase-4` | [pos-tech-mlet-fase-4.onrender.com](https://pos-tech-mlet-fase-4.onrender.com) |
 | Dashboard Streamlit | `lstm-stock-dashboard` | [lstm-stock-dashboard.onrender.com](https://lstm-stock-dashboard.onrender.com) |
 
 ### Como fazer deploy
