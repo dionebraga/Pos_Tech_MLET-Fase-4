@@ -132,19 +132,32 @@ Dashboard Streamlit com 7 módulos: Candlestick, RSI, MACD, Bollinger Bands, Fib
 
 ## 🚀 Quick Start
 
-```mermaid
-flowchart LR
-    A["📥 1 · Clone\ngit clone\n~5 segundos"]
-    B["🐳 2 · Subir Stack\ndocker-compose up -d\n~2 minutos"]
-    C["🎉 3 · Pronto!\nlocalhost:8000/docs\nlocalhost:8501"]
-
-    A -->|" git clone + cd "| B
-    B -->|" API + Dashboard\n+ Prometheus + Grafana "| C
-
-    style A fill:#0d1117,color:#58a6ff,stroke:#388bfd,stroke-width:2px
-    style B fill:#0d1117,color:#ffa657,stroke:#e3b341,stroke-width:2px
-    style C fill:#0d1117,color:#56d364,stroke:#3fb950,stroke-width:2px
-```
+<table>
+<tr>
+<td align="center" width="30%">
+<br/>
+<b>📥 Passo 1 — Clone</b><br/><br/>
+<code>git clone https://github.com/dionebraga/Pos_Tech_MLET-Fase-4.git</code><br/>
+<code>cd tech-challenge-fase4</code><br/><br/>
+<sub><i>~5 segundos</i></sub>
+</td>
+<td align="center" width="5%"><b>→</b></td>
+<td align="center" width="34%">
+<br/>
+<b>🐳 Passo 2 — Subir Stack</b><br/><br/>
+<code>docker-compose up -d</code><br/><br/>
+<sub><i>~2 minutos · API + Dashboard + Prometheus + Grafana</i></sub>
+</td>
+<td align="center" width="5%"><b>→</b></td>
+<td align="center" width="26%">
+<br/>
+<b>🎉 Passo 3 — Pronto!</b><br/><br/>
+<a href="http://localhost:8000/docs"><code>localhost:8000/docs</code></a><br/>
+<a href="http://localhost:8501"><code>localhost:8501</code></a><br/><br/>
+<sub><i>Swagger UI + Dashboard live</i></sub>
+</td>
+</tr>
+</table>
 
 ```bash
 git clone https://github.com/dionebraga/Pos_Tech_MLET-Fase-4.git
@@ -694,26 +707,23 @@ flowchart TD
 
 ### Pipeline de Treinamento
 
-```mermaid
-flowchart LR
-    S1["1️⃣\nDownload\nyfinance OHLCV\n2 093 linhas"]
-    S2["2️⃣\nNormalização\nMinMaxScaler\nfit só no treino"]
-    S3["3️⃣\nJanelamento\n60d → D+1\nsliding window"]
-    S4["4️⃣\nSplit Temporal\n80% treino\n20% teste"]
-    S5["5️⃣\nTreino\nAdam lr=0.001\nMSE · EarlyStopping"]
-    S6["6️⃣\nAvaliação\nMAE · RMSE\nMAPE · Acurácia"]
-    S7["7️⃣\nSalvar\nmodel.keras\nscaler.pkl"]
-
-    S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7
-
-    style S1 fill:#0d1117,color:#58a6ff,stroke:#388bfd
-    style S2 fill:#0d1117,color:#79c0ff,stroke:#388bfd
-    style S3 fill:#0d1117,color:#79c0ff,stroke:#388bfd
-    style S4 fill:#0d1117,color:#d2a8ff,stroke:#8b949e
-    style S5 fill:#0d1117,color:#ffa657,stroke:#e3b341
-    style S6 fill:#0d1117,color:#ffa657,stroke:#e3b341
-    style S7 fill:#0d1117,color:#56d364,stroke:#3fb950
-```
+<table>
+<tr>
+<td align="center" width="14%"><b>1️⃣</b><br/><b>Download</b><br/><sub>yfinance OHLCV<br/>2 093 linhas</sub></td>
+<td align="center" width="2%">→</td>
+<td align="center" width="14%"><b>2️⃣</b><br/><b>Normalização</b><br/><sub>MinMaxScaler<br/>fit só no treino</sub></td>
+<td align="center" width="2%">→</td>
+<td align="center" width="14%"><b>3️⃣</b><br/><b>Janelamento</b><br/><sub>60d → D+1<br/>sliding window</sub></td>
+<td align="center" width="2%">→</td>
+<td align="center" width="14%"><b>4️⃣</b><br/><b>Split Temporal</b><br/><sub>80% treino<br/>20% teste</sub></td>
+<td align="center" width="2%">→</td>
+<td align="center" width="14%"><b>5️⃣</b><br/><b>Treino</b><br/><sub>Adam lr=0.001<br/>MSE · EarlyStopping</sub></td>
+<td align="center" width="2%">→</td>
+<td align="center" width="14%"><b>6️⃣</b><br/><b>Avaliação</b><br/><sub>MAE · RMSE<br/>MAPE · Acurácia</sub></td>
+<td align="center" width="2%">→</td>
+<td align="center" width="14%"><b>7️⃣</b><br/><b>Salvar</b><br/><sub>model.keras<br/>scaler.pkl</sub></td>
+</tr>
+</table>
 
 ### Células LSTM — Memória com 3 Portões
 
@@ -781,41 +791,29 @@ flowchart LR
 
 > A mesma ideia de geração de texto em LLMs: cada previsão alimenta a janela seguinte — o modelo "escreve" o futuro um dia de cada vez.
 
-```mermaid
-flowchart LR
-    W["📦 Janela\nt-59 … t\n60 dias reais"]
-
-    subgraph G1["Iteração 1"]
-        M1["🧠"] --> P1["D+1\n$197.83"]
-    end
-    subgraph G2["Iteração 2"]
-        M2["🧠"] --> P2["D+2\n$198.51"]
-    end
-    subgraph G3["Iteração 3"]
-        M3["🧠"] --> P3["D+3\n$199.10"]
-    end
-    subgraph G45["Iterações 4–5"]
-        M45["🧠 ···"] --> P45["D+4–5\n$199–200"]
-    end
-
-    W --> G1
-    P1 -->|"descarta t-59\ninjeta D+1"| G2
-    P2 -->|"descarta t-58\ninjeta D+2"| G3
-    P3 -->|"···"| G45
-
-    style W   fill:#0d1117,color:#58a6ff,stroke:#388bfd,stroke-width:2px
-    style P1  fill:#0d1117,color:#56d364,stroke:#3fb950,stroke-width:2px
-    style P2  fill:#0d1117,color:#56d364,stroke:#3fb950,stroke-width:2px
-    style P3  fill:#0d1117,color:#56d364,stroke:#3fb950,stroke-width:2px
-    style P45 fill:#0d1117,color:#56d364,stroke:#3fb950,stroke-width:2px
-```
+<table>
+<tr>
+<td align="center" width="16%"><b>📦 Janela Inicial</b><br/><sub>t-59 … t<br/>60 dias reais</sub></td>
+<td align="center" width="4%">→</td>
+<td align="center" width="16%"><b>🧠 LSTM</b><br/>Iteração 1<br/><b>D+1 · $197.83</b></td>
+<td align="center" width="4%">→</td>
+<td align="center" width="16%"><b>🧠 LSTM</b><br/>Iteração 2<br/><b>D+2 · $198.51</b></td>
+<td align="center" width="4%">→</td>
+<td align="center" width="16%"><b>🧠 LSTM</b><br/>Iteração 3<br/><b>D+3 · $199.10</b></td>
+<td align="center" width="4%">→</td>
+<td align="center" width="20%"><b>🧠 LSTM</b><br/>Iterações 4–5<br/><b>D+4–5 · $199–200</b></td>
+</tr>
+<tr>
+<td colspan="9" align="center"><sub><i>Cada previsão descarta o dia mais antigo da janela e injeta o novo fechamento previsto</i></sub></td>
+</tr>
+</table>
 
 ### Regularização — Por Que o Modelo Generaliza
 
 > Três mecanismos trabalhando juntos para que o modelo não decore os 2 093 dias de treino — e acerte os 407 dias que nunca viu.
 
 ```mermaid
-flowchart LR
+flowchart TD
     subgraph LOOP["  Loop de Treino · 29 épocas  "]
         EP["📊 Época N"] --> FW["Forward Pass\ncalcula MSE loss"]
         FW --> BW["Backprop\nAdam atualiza pesos"]
@@ -823,11 +821,11 @@ flowchart LR
     end
 
     subgraph REG["  Regularização  "]
-        direction TB
-        DR["⬜ Dropout 20%\ndesativa neurônios aleatórios\na cada época\n→ ensemble implícito\n→ menos co-adaptação"]
-        ES["⏹️ EarlyStopping\nmonitor: val_loss · patience: 10\nparou na época 29\nmelhor modelo: época 19\n→ sem overfitting tardio"]
-        RL["📉 ReduceLROnPlateau\nfactor: 0.5 · patience: 5\n0.001 → 0.0005\n→ ajuste fino na convergência"]
-        CP["💾 ModelCheckpoint\nsalva pesos da época 19\nnão da última\n→ generalização máxima"]
+        direction LR
+        DR["⬜ Dropout 20%\ndesativa neurônios aleatórios\na cada época\n→ ensemble implícito"]
+        ES["⏹️ EarlyStopping\npatience: 10\nparou na época 29\nmelhor: época 19"]
+        RL["📉 ReduceLROnPlateau\nfactor: 0.5 · patience: 5\n0.001 → 0.0005"]
+        CP["💾 ModelCheckpoint\nsalva pesos da época 19\n→ generalização máxima"]
     end
 
     LOOP --> DR
