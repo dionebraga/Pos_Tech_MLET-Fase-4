@@ -31,14 +31,9 @@
       },
       "targets": [
         {
-          "expr": "max(model_loaded{job=\"lstm-api-local\"})",
-          "legendFormat": "Local",
+          "expr": "max(model_loaded)",
+          "legendFormat": "Modelo",
           "refId": "A"
-        },
-        {
-          "expr": "max(model_loaded{job=\"lstm-api-prod\"})",
-          "legendFormat": "Prod",
-          "refId": "B"
         }
       ],
       "title": "Status do Modelo",
