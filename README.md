@@ -205,6 +205,10 @@ mindmap
       📈 Métricas
       🧠 Treinamento
       Arquitetura LSTM
+      Células LSTM
+      Janela 60d
+      Geração D+5
+      Regularização
     Desenvolvimento
       ⚡ Uso da API
       ⚙️ Setup Local
@@ -250,7 +254,7 @@ flowchart TD
     YF -->|"download histórico"| DP
     CSV -.->|"fallback"| DP
     DP -->|"X:(n,60,1) · y:(n,1)"| ML
-    ML -->|"MAE 4.86 · RMSE 6.28 · MAPE 2.66%"| ART
+    ML -->|"MAE 5.78 · RMSE 7.46 · MAPE 2.48%"| ART
     ART -->|"carregado no startup"| API
     API -->|"HTTP middleware · 15s"| PROM
     PROM -->|"datasource"| GRAF
@@ -356,12 +360,15 @@ Terminal de trading completo com dados reais do Yahoo Finance. Atualização aut
 
 ## 📈 Métricas do Modelo
 
-```mermaid
-xychart-beta horizontal
-    title "Métricas de Erro — quanto menor, melhor"
-    x-axis ["MAE (USD)", "RMSE (USD)", "MAPE (%)"]
-    y-axis "Valor" 0 --> 10
-    bar [5.78, 7.46, 2.48]
+```
+  AAPL · Jan 2018 – Abr 2026 · LSTM 64+64 · 29 épocas · janela 60 dias
+  ────────────────────────────────────────────────────────────────────
+  MAE    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░░░░░░   5.78 USD  ✅  bench < 6.0
+  RMSE   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░   7.46 USD  ✅  bench < 8.0
+  MAPE   ▓▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░░░░░░   2.48  %   ✅  bench < 5.0
+  Acc    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░  97.52  %   ✅  bench > 95
+  ────────────────────────────────────────────────────────────────────
+  Escala: MAE/RMSE/MAPE em 0–10 · Acurácia em 0–100 · ▓ = preenchido
 ```
 
 <div align="center">
@@ -689,7 +696,7 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    S1["1️⃣\nDownload\nyfinance OHLCV\n1 647 linhas"]
+    S1["1️⃣\nDownload\nyfinance OHLCV\n2 093 linhas"]
     S2["2️⃣\nNormalização\nMinMaxScaler\nfit só no treino"]
     S3["3️⃣\nJanelamento\n60d → D+1\nsliding window"]
     S4["4️⃣\nSplit Temporal\n80% treino\n20% teste"]
@@ -706,6 +713,133 @@ flowchart LR
     style S5 fill:#0d1117,color:#ffa657,stroke:#e3b341
     style S6 fill:#0d1117,color:#ffa657,stroke:#e3b341
     style S7 fill:#0d1117,color:#56d364,stroke:#3fb950
+```
+
+### Células LSTM — Memória com 3 Portões
+
+> Cada pregão atualiza 3 portões que decidem o que lembrar, aprender e revelar — resolvendo o problema do gradiente que vanish em RNNs simples.
+
+```mermaid
+flowchart LR
+    X["📊 x_t\npreço normalizado\n[ 0 … 1 ]"]
+    H["🔁 h_t-1\nestado oculto\npregão anterior"]
+
+    subgraph CELL["  Célula LSTM · pregão t  "]
+        direction TB
+        FG["🔴 Forget Gate\nσ · Wf · [ h, x ]\n'quanto esquecer do passado'"]
+        IG["🟡 Input Gate\nσ · Wi · [ h, x ]\n'quanto gravar agora'"]
+        CS["🔵 Cell State  C_t\nC_t = f ⊗ C_{t-1}  +  i ⊗ g\n'memória de longo prazo'"]
+        OG["🟢 Output Gate\nσ · Wo · [ h, x ]\n'quanto revelar'"]
+    end
+
+    OUT["🔮 h_t\n→ Dense(1)\npreço D+1 (USD)"]
+
+    X & H --> FG --> CS
+    X & H --> IG --> CS
+    X & H --> OG
+    CS --> OG --> OUT
+
+    style X   fill:#0d1117,color:#58a6ff,stroke:#388bfd,stroke-width:2px
+    style H   fill:#0d1117,color:#8b949e,stroke:#30363d
+    style FG  fill:#0d1117,color:#ff7b72,stroke:#f85149,stroke-width:2px
+    style IG  fill:#0d1117,color:#e3b341,stroke:#d29922,stroke-width:2px
+    style CS  fill:#0d1117,color:#79c0ff,stroke:#388bfd,stroke-width:3px
+    style OG  fill:#0d1117,color:#56d364,stroke:#3fb950,stroke-width:2px
+    style OUT fill:#0d1117,color:#d2a8ff,stroke:#a371f7,stroke-width:2px
+```
+
+### Janela Deslizante — 60 Pregões como Sequência
+
+> A mesma lógica de tokenização de texto: cada dia é um token, a janela de 60 dias é a sequência de entrada.
+
+```mermaid
+flowchart LR
+    subgraph WIN["  Janela · últimos 60 pregões  "]
+        direction LR
+        W1["📅 t-59\n$168"] --> W2["📅 t-58\n$170"] --> W3["··· 56d ···"] --> W59["📅 t-1\n$195"] --> W60["📅 t\n$196"]
+    end
+
+    subgraph NORM["  MinMaxScaler → [ 0, 1 ]  "]
+        N1["0.41"] --> N2["0.45"] --> N3["···"] --> N59["0.92"] --> N60["0.93"]
+    end
+
+    subgraph FWD["  Forward Pass  "]
+        M["🧠 LSTM 64\nreturn_sequences=True\n↓\nLSTM 64\nreturn_sequences=False\n↓\nDense(1) → escalar\n↓\ninverse_transform"]
+    end
+
+    WIN -->|"normaliza"| NORM
+    NORM -->|"shape (1, 60, 1)"| FWD
+    FWD --> R["💵 D+1\n$197.83  +0.73%"]
+
+    style W60 fill:#0d1117,color:#ffa657,stroke:#e3b341,stroke-width:2px
+    style N60 fill:#0d1117,color:#ffa657,stroke:#e3b341
+    style M   fill:#0d1117,color:#ffa657,stroke:#e3b341,stroke-width:2px
+    style R   fill:#0d1117,color:#56d364,stroke:#3fb950,stroke-width:2px
+```
+
+### Geração Auto-Regressiva D+1 → D+5
+
+> A mesma ideia de geração de texto em LLMs: cada previsão alimenta a janela seguinte — o modelo "escreve" o futuro um dia de cada vez.
+
+```mermaid
+flowchart LR
+    W["📦 Janela\nt-59 … t\n60 dias reais"]
+
+    subgraph G1["Iteração 1"]
+        M1["🧠"] --> P1["D+1\n$197.83"]
+    end
+    subgraph G2["Iteração 2"]
+        M2["🧠"] --> P2["D+2\n$198.51"]
+    end
+    subgraph G3["Iteração 3"]
+        M3["🧠"] --> P3["D+3\n$199.10"]
+    end
+    subgraph G45["Iterações 4–5"]
+        M45["🧠 ···"] --> P45["D+4–5\n$199–200"]
+    end
+
+    W --> G1
+    P1 -->|"descarta t-59\ninjeta D+1"| G2
+    P2 -->|"descarta t-58\ninjeta D+2"| G3
+    P3 -->|"···"| G45
+
+    style W   fill:#0d1117,color:#58a6ff,stroke:#388bfd,stroke-width:2px
+    style P1  fill:#0d1117,color:#56d364,stroke:#3fb950,stroke-width:2px
+    style P2  fill:#0d1117,color:#56d364,stroke:#3fb950,stroke-width:2px
+    style P3  fill:#0d1117,color:#56d364,stroke:#3fb950,stroke-width:2px
+    style P45 fill:#0d1117,color:#56d364,stroke:#3fb950,stroke-width:2px
+```
+
+### Regularização — Por Que o Modelo Generaliza
+
+> Três mecanismos trabalhando juntos para que o modelo não decore os 2 093 dias de treino — e acerte os 407 dias que nunca viu.
+
+```mermaid
+flowchart LR
+    subgraph LOOP["  Loop de Treino · 29 épocas  "]
+        EP["📊 Época N"] --> FW["Forward Pass\ncalcula MSE loss"]
+        FW --> BW["Backprop\nAdam atualiza pesos"]
+        BW --> EP
+    end
+
+    subgraph REG["  Regularização  "]
+        direction TB
+        DR["⬜ Dropout 20%\ndesativa neurônios aleatórios\na cada época\n→ ensemble implícito\n→ menos co-adaptação"]
+        ES["⏹️ EarlyStopping\nmonitor: val_loss · patience: 10\nparou na época 29\nmelhor modelo: época 19\n→ sem overfitting tardio"]
+        RL["📉 ReduceLROnPlateau\nfactor: 0.5 · patience: 5\n0.001 → 0.0005\n→ ajuste fino na convergência"]
+        CP["💾 ModelCheckpoint\nsalva pesos da época 19\nnão da última\n→ generalização máxima"]
+    end
+
+    LOOP --> DR
+    LOOP --> ES
+    LOOP --> RL
+    ES --> CP
+    RL --> CP
+
+    style DR fill:#0d1117,color:#8b949e,stroke:#30363d
+    style ES fill:#0d1117,color:#ff7b72,stroke:#f85149,stroke-width:2px
+    style RL fill:#0d1117,color:#e3b341,stroke:#d29922,stroke-width:2px
+    style CP fill:#0d1117,color:#56d364,stroke:#3fb950,stroke-width:2px
 ```
 
 ---
