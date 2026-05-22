@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     # ---------- Dados ----------
     DEFAULT_SYMBOL: str = "AAPL"
     DEFAULT_START_DATE: str = "2018-01-01"
-    DEFAULT_END_DATE: str = "2024-07-20"
+    DEFAULT_END_DATE: str = "2026-05-01"
 
     # ---------- Modelo ----------
     WINDOW_SIZE: int = 60          # qtd de dias usados para prever o próximo

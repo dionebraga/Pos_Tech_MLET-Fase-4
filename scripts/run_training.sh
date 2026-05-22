@@ -6,7 +6,7 @@ set -euo pipefail
 
 SYMBOL="${1:-AAPL}"
 START="${2:-2018-01-01}"
-END="${3:-2024-07-20}"
+END="${3:-2026-05-01}"
 EPOCHS="${4:-50}"
 
 echo "🧠 Treinando LSTM para $SYMBOL ($START → $END) por $EPOCHS épocas"

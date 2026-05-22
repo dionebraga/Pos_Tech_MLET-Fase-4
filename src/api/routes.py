@@ -312,7 +312,7 @@ pre .cm{{color:var(--t5)}}
 
   <!-- FOOTER -->
   <div class="page-footer">
-    <span>Dione Braga Ferreira · PosTech MLET FIAP · 2024</span>
+    <span>Dione Braga Ferreira · PosTech MLET FIAP · 2026</span>
     <span style="color:var(--t5)">{now_str}</span>
     <span>
       <a href="/health">health</a> ·

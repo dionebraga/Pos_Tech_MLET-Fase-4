@@ -106,6 +106,6 @@ if __name__ == "__main__":
         level=logging.INFO,
         format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
     )
-    df = fetch_stock_data("AAPL", "2024-01-01", "2024-07-01")
+    df = fetch_stock_data("AAPL", "2018-01-01", "2026-05-01")
     print(df.head())
     print(f"\nTotal de registros: {len(df)}")

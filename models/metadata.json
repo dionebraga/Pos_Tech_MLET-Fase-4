@@ -1,20 +1,20 @@
 {
   "symbol": "AAPL",
   "start_date": "2018-01-01",
-  "end_date": "2024-07-20",
+  "end_date": "2026-05-01",
   "window_size": 60,
   "lstm_units_1": 64,
   "lstm_units_2": 64,
   "dropout_rate": 0.2,
-  "epochs_trained": 14,
+  "epochs_trained": 29,
   "batch_size": 32,
   "learning_rate": 0.001,
-  "train_samples": 1269,
-  "test_samples": 318,
+  "train_samples": 1626,
+  "test_samples": 407,
   "metrics": {
-    "mae": 4.784182548522949,
-    "rmse": 6.217347145080566,
-    "mape": 2.584913931787014
+    "mae": 5.77655553817749,
+    "rmse": 7.4562602043151855,
+    "mape": 2.4779977276921272
   },
-  "trained_at": "2026-05-22T18:29:34.379880+00:00"
+  "trained_at": "2026-05-22T23:40:01.428834+00:00"
 }

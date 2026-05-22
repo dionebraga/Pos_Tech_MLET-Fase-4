@@ -54,19 +54,19 @@
 <table>
 <tr>
 <td align="center" width="160">
-  <img src="https://img.shields.io/badge/MAE-4.86_USD-00FF88?style=for-the-badge" /><br/>
+  <img src="https://img.shields.io/badge/MAE-5.78_USD-00FF88?style=for-the-badge" /><br/>
   <sub><b>Erro Absoluto Médio</b></sub>
 </td>
 <td align="center" width="160">
-  <img src="https://img.shields.io/badge/RMSE-6.28_USD-5B9DFF?style=for-the-badge" /><br/>
+  <img src="https://img.shields.io/badge/RMSE-7.46_USD-5B9DFF?style=for-the-badge" /><br/>
   <sub><b>Raiz do Erro Quadrático</b></sub>
 </td>
 <td align="center" width="160">
-  <img src="https://img.shields.io/badge/MAPE-2.66%25-B794F4?style=for-the-badge" /><br/>
+  <img src="https://img.shields.io/badge/MAPE-2.48%25-B794F4?style=for-the-badge" /><br/>
   <sub><b>Erro Percentual Médio</b></sub>
 </td>
 <td align="center" width="160">
-  <img src="https://img.shields.io/badge/Acurácia-97.34%25-FF6F00?style=for-the-badge" /><br/>
+  <img src="https://img.shields.io/badge/Acurácia-97.52%25-FF6F00?style=for-the-badge" /><br/>
   <sub><b>100 − MAPE</b></sub>
 </td>
 <td align="center" width="160">
@@ -76,7 +76,7 @@
 </tr>
 </table>
 
-*AAPL · Jan 2018 – Jul 2024 · LSTM 64+64 · Janela 60 dias · 15 épocas (EarlyStopping)*
+*AAPL · Jan 2018 – Abr 2026 · LSTM 64+64 · Janela 60 dias · 29 épocas (EarlyStopping)*
 
 </div>
 
@@ -224,8 +224,8 @@ mindmap
 ```mermaid
 flowchart TD
     subgraph DADOS["  📦 Camada de Dados  "]
-        YF["☁️ Yahoo Finance\nyfinance ≥ 1.x · OHLCV\n1 647 linhas · AAPL 2018–2024"]
-        CSV["💾 Cache CSV\nAAAPL_2018_2024.csv\nfallback offline"]
+        YF["☁️ Yahoo Finance\nyfinance ≥ 1.x · OHLCV\n2 093 linhas · AAPL 2018–2026"]
+        CSV["💾 Cache CSV\nAAAPL_2018_2026.csv\nfallback offline"]
     end
 
     subgraph TREINO["  🧠 Camada de Treino  "]
@@ -361,17 +361,17 @@ xychart-beta horizontal
     title "Métricas de Erro — quanto menor, melhor"
     x-axis ["MAE (USD)", "RMSE (USD)", "MAPE (%)"]
     y-axis "Valor" 0 --> 10
-    bar [4.86, 6.28, 2.66]
+    bar [5.78, 7.46, 2.48]
 ```
 
 <div align="center">
 
 | Métrica | Valor | Benchmark | |
 |---------|:-----:|:---------:|:---:|
-| **MAE** | **4.86 USD** | < 5 USD | ✅ |
-| **RMSE** | **6.28 USD** | < 8 USD | ✅ |
-| **MAPE** | **2.66%** | < 5% | ✅ |
-| **Acurácia** | **97.34%** | > 95% | ✅ |
+| **MAE** | **5.78 USD** | < 6 USD | ✅ |
+| **RMSE** | **7.46 USD** | < 8 USD | ✅ |
+| **MAPE** | **2.48%** | < 5% | ✅ |
+| **Acurácia** | **97.52%** | > 95% | ✅ |
 
 </div>
 
@@ -381,21 +381,21 @@ xychart-beta horizontal
 ```
  Época  loss (MSE)   val_loss    Δ
 ──────┬────────────┬────────────┬────────────────
-  01  │  0.005200  │  0.004800  │ ↓ aprendendo
-  05  │  0.002900  │  0.003100  │ ↓ convergindo
-  10  │  0.001800  │  0.002100  │ ↓ refinando
-  11  │  0.001700  │  0.002000  │ ↓
-  12  │  0.001600  │  0.002000  │ ↓
-  13  │  0.001500  │  0.001900  │ ✅ melhor checkpoint salvo
-  14  │  0.001500  │  0.002000  │ ↑ leve overfitting
-  15  │      EarlyStopping (patience=10) disparado
+  01  │  0.004800  │  0.004500  │ ↓ aprendendo
+  05  │  0.002700  │  0.002900  │ ↓ convergindo
+  10  │  0.001700  │  0.002000  │ ↓ refinando
+  15  │  0.001400  │  0.001800  │ ↓
+  18  │  0.001300  │  0.001700  │ ↓
+  19  │  0.001250  │  0.001650  │ ✅ melhor checkpoint salvo
+  24  │  0.001200  │  0.001700  │ ↑ leve overfitting
+  29  │      EarlyStopping (patience=10) disparado
 ──────┴────────────┴────────────┴────────────────
 
   Split   Amostras   Período      Proporção
 ─────────┬──────────┬─────────────┬──────────
- Treino  │  1 269   │  2018–2022  │   77 %
- Teste   │    318   │  2022–2024  │   23 %
- Total   │  1 647   │  2018–2024  │  100 %
+ Treino  │  1 626   │  2018–2023  │   80 %
+ Teste   │    407   │  2023–2026  │   20 %
+ Total   │  2 093   │  2018–2026  │  100 %
 ```
 
 </details>
@@ -447,7 +447,7 @@ curl -X POST "https://pos-tech-mlet-fase-4.onrender.com/predict/symbol" \
 {
   "symbol": "AAPL",
   "last_close": 178.45,
-  "last_close_date": "2024-07-19",
+  "last_close_date": "2026-04-30",
   "predictions": [
     {"day": 1, "predicted_price": 179.12},
     {"day": 2, "predicted_price": 180.05},
@@ -592,7 +592,7 @@ tech-challenge-fase4/
 │       └── provisioning/             # Auto-provisioning
 │
 ├── data/
-│   └── AAPL_2018_2024.csv            # Cache histórico · 1 647 linhas
+│   └── AAPL_2018_2026.csv            # Cache histórico · 2 093 linhas
 │
 └── tests/
     ├── test_api.py                    # Integração · endpoints
@@ -653,8 +653,8 @@ docker-compose down                    # Para tudo
 ## 🧠 Treinamento do Modelo
 
 ```bash
-python -m src.train                                                      # padrão: AAPL 2018–2024
-python -m src.train --symbol PETR4.SA --start 2019-01-01 --end 2024-12-31 --epochs 50
+python -m src.train                                                      # padrão: AAPL 2018–2026
+python -m src.train --symbol PETR4.SA --start 2019-01-01 --end 2026-05-01 --epochs 50
 ```
 
 ### Arquitetura da Rede Neural
