@@ -102,87 +102,132 @@ docker-compose up -d
 
 ## 🏗 Arquitetura
 
-```
-╔══════════════════════════════════════════════════════════════════════════╗
-║                         PIPELINE COMPLETO                                ║
-╠══════════════════════════════════════════════════════════════════════════╣
-║                                                                          ║
-║  ┌─────────────┐    ┌──────────────────┐    ┌────────────────────────┐  ║
-║  │Yahoo Finance│───▶│  Data Pipeline   │───▶│   LSTM Training        │  ║
-║  │  (yfinance) │    │  MinMaxScaler    │    │   TensorFlow 2.17      │  ║
-║  │  OHLCV data │    │  Window=60 dias  │    │   64+64 units          │  ║
-║  └─────────────┘    └──────────────────┘    └──────────┬─────────────┘  ║
-║                                                         │                ║
-║                               ┌─────────────────────────▼─────────┐     ║
-║                               │         Artefatos Serializados    │     ║
-║                               │  lstm_model.keras  scaler.pkl     │     ║
-║                               │  metadata.json (métricas)         │     ║
-║                               └───────────────┬───────────────────┘     ║
-║                                               │                          ║
-║  ┌───────────────┐   ┌──────────────────────▼────────────────────┐     ║
-║  │  Prometheus   │◀──│            FastAPI App                     │     ║
-║  │  + Grafana    │   │  POST /predict      GET /health            │     ║
-║  │  (métricas)   │   │  POST /predict/symbol  GET /model/info     │     ║
-║  └───────────────┘   │  GET /metrics       GET /docs              │     ║
-║                       └──────────────────────┬─────────────────────┘     ║
-║                                              │  HTTP / REST               ║
-║                       ┌──────────────────────▼─────────────────────┐     ║
-║                       │        Streamlit Dashboard                  │     ║
-║                       │  Candlestick · RSI · MACD · Monte Carlo     │     ║
-║                       │  Fibonacci · Heatmap · Previsões LSTM       │     ║
-║                       └────────────────────────────────────────────┘     ║
-║                                                                          ║
-╚══════════════════════════════════════════════════════════════════════════╝
+```mermaid
+flowchart TD
+    YF["☁️ Yahoo Finance\nyfinance — OHLCV histórico"]
+    DP["⚙️ Data Pipeline\nMinMaxScaler · Janela 60 dias\nSliding Window · 80/20 split"]
+    TR["🧠 LSTM Training\nTensorFlow 2.17 · Keras 3.x\n2× LSTM(64) + Dropout(0.2)"]
+    ART["💾 Artefatos Serializados\nlstm_model.keras · scaler.pkl\nmetadata.json"]
+    API["⚡ FastAPI App\nPOST /predict · /predict/symbol\nGET /health · /model/info · /docs"]
+    PROM["📊 Prometheus + Grafana\nRPS · Latência · Inferência\nRAM · CPU · Previsões"]
+    DASH["🖥️ Streamlit Dashboard\nCandlestick · RSI · MACD\nMonte Carlo · Fibonacci · LSTM"]
+
+    YF -->|"1 647 linhas AAPL 2018–2024"| DP
+    DP -->|"X:(n,60,1) · y:(n,1)"| TR
+    TR -->|"MAE 4.86 · RMSE 6.28 · MAPE 2.66%"| ART
+    ART -->|"carregado no startup"| API
+    API -->|"scrape /metrics a cada 15s"| PROM
+    API -->|"REST · ~87ms latência"| DASH
+
+    style YF fill:#1a1a2e,color:#fff,stroke:#5B9DFF
+    style DP fill:#16213e,color:#fff,stroke:#5B9DFF
+    style TR fill:#0f3460,color:#fff,stroke:#FF6F00
+    style ART fill:#533483,color:#fff,stroke:#B794F4
+    style API fill:#0d7377,color:#fff,stroke:#00FF88
+    style PROM fill:#14213d,color:#fff,stroke:#FF6F00
+    style DASH fill:#1b4332,color:#fff,stroke:#5B9DFF
 ```
 
 ### Fluxo de Dados
 
-```
-  COLETA              PRÉ-PROC          TREINO            INFERÊNCIA
-┌─────────┐       ┌───────────┐      ┌──────────┐      ┌───────────┐
-│yfinance │──────▶│MinMax     │─────▶│LSTM 64+64│─────▶│predict_  │
-│OHLCV    │       │Scaler     │      │Dropout   │      │next()     │
-│histórico│       │           │      │EarlyStp  │      │           │
-└─────────┘       │Window=60d │      └──────────┘      │D+1..D+N   │
-                  │Sliding    │                         │preços USD │
-                  └───────────┘                         └───────────┘
-       │                │                   │                 │
-       ▼                ▼                   ▼                 ▼
-  1647 linhas    X:(n,60,1)          mae=4.86        API responde
-  2018-2024      y:(n,1)             rmse=6.28       em ~87ms
-                 80/20 split         mape=2.66%
+```mermaid
+flowchart LR
+    subgraph COLETA["📥 Coleta"]
+        A["yfinance\nOHLCV\n1647 linhas"]
+    end
+    subgraph PROC["⚙️ Pré-proc"]
+        B["MinMaxScaler\nWindow=60d\nSliding"]
+    end
+    subgraph TREINO["🧠 Treino"]
+        C["LSTM 64+64\nDropout 0.2\nEarlyStopping"]
+    end
+    subgraph INFER["🔮 Inferência"]
+        D["predict_next()\nD+1 .. D+N\nUSD"]
+    end
+
+    A -->|"fit scaler"| B
+    B -->|"X:(n,60,1)\ny:(n,1)"| C
+    C -->|"model.keras\nscaler.pkl"| D
+
+    style COLETA fill:#1a1a2e,color:#fff,stroke:#5B9DFF
+    style PROC fill:#16213e,color:#fff,stroke:#5B9DFF
+    style TREINO fill:#0f3460,color:#fff,stroke:#FF6F00
+    style INFER fill:#0d7377,color:#fff,stroke:#00FF88
 ```
 
 ---
 
-## 📸 Screenshots
+## 📸 Demonstração
 
 ### 🖥️ Dashboard — Trading Terminal
 
-> Acesse ao vivo: **[lstm-stock-dashboard.onrender.com](https://lstm-stock-dashboard.onrender.com)**
+> **[lstm-stock-dashboard.onrender.com](https://lstm-stock-dashboard.onrender.com)**
 
-O dashboard exibe candlestick interativo, análise técnica completa (RSI, MACD, Bollinger Bands, Fibonacci), simulação Monte Carlo com percentis de cenários e previsões LSTM integradas em tempo real.
+Terminal de trading completo com dados reais do Yahoo Finance:
+
+```mermaid
+graph LR
+    subgraph DASH["🖥️ Streamlit Dashboard"]
+        direction TB
+        C1["📈 Candlestick\nOHLCV em tempo real"]
+        C2["📉 RSI + MACD\nBollinger Bands"]
+        C3["🌀 Fibonacci\nRetracement Levels"]
+        C4["🎲 Monte Carlo\nCenários futuros"]
+        C5["🗓️ Heatmap\nRetornos mensais"]
+        C6["🧠 LSTM Forecast\nD+1 a D+5"]
+    end
+
+    style DASH fill:#1b4332,color:#fff,stroke:#00FF88
+    style C1 fill:#0d3b27,color:#ccc,stroke:#5B9DFF
+    style C2 fill:#0d3b27,color:#ccc,stroke:#5B9DFF
+    style C3 fill:#0d3b27,color:#ccc,stroke:#5B9DFF
+    style C4 fill:#0d3b27,color:#ccc,stroke:#FF6F00
+    style C5 fill:#0d3b27,color:#ccc,stroke:#FF6F00
+    style C6 fill:#0d3b27,color:#ccc,stroke:#B794F4
+```
 
 [![Abrir Dashboard](https://img.shields.io/badge/▶%20Abrir%20Dashboard%20ao%20Vivo-5B9DFF?style=for-the-badge&logo=streamlit&logoColor=white)](https://lstm-stock-dashboard.onrender.com)
 
 ---
 
-### 📊 Grafana — Monitoramento em Tempo Real
+### 📊 Grafana — Painéis de Monitoramento
 
-> Disponível localmente em: **[localhost:3000](http://localhost:3000)** após `docker-compose up -d`
+> `docker-compose up -d` → **[localhost:3000](http://localhost:3000)** `admin/admin`
 
-O dashboard Grafana pré-configurado (`monitoring/grafana/dashboards/api_dashboard.json`) exibe:
+```mermaid
+graph TD
+    subgraph G["📊 Grafana Dashboard — LSTM Stock API"]
+        P1["🟢 Status do Modelo\nmodel_loaded = 1"]
+        P2["📈 RPS por endpoint\nrate(http_requests_total[1m])"]
+        P3["⏱️ Latência HTTP\np50 / p95 / p99"]
+        P4["🧠 Inferência LSTM\navg ms + p95 ms"]
+        P5["💾 RAM\nprocess_resident_memory_bytes"]
+        P6["🖥️ CPU\nprocess_cpu_seconds_total"]
+        P7["🔢 Total Previsões\npredictions_total por status"]
+        P8["💵 Últimas Previsões\nlast_prediction_value por símbolo"]
+    end
 
-| Painel | Métrica monitorada |
-|--------|--------------------|
-| **Status do Modelo** | `model_loaded` — 1=Online / 0=Offline |
-| **Requisições/s (RPS)** | `rate(http_requests_total[1m])` |
-| **Latência HTTP** | Percentis p50 / p95 / p99 (histogram) |
-| **Tempo de Inferência** | Média + p95 do modelo LSTM em ms |
-| **Uso de Memória** | `process_resident_memory_bytes` por job |
-| **Uso de CPU** | `rate(process_cpu_seconds_total[1m])` |
-| **Total de Previsões** | `predictions_total` por status |
-| **Últimas Previsões** | `last_prediction_value` por símbolo (USD) |
+    style G fill:#111,color:#fff,stroke:#FF6F00
+    style P1 fill:#1a2e1a,color:#00FF88,stroke:#00FF88
+    style P2 fill:#1a1a2e,color:#5B9DFF,stroke:#5B9DFF
+    style P3 fill:#1a1a2e,color:#5B9DFF,stroke:#5B9DFF
+    style P4 fill:#2e1a1a,color:#FF6F00,stroke:#FF6F00
+    style P5 fill:#2e1a2e,color:#B794F4,stroke:#B794F4
+    style P6 fill:#2e1a2e,color:#B794F4,stroke:#B794F4
+    style P7 fill:#2e2a1a,color:#FFD700,stroke:#FFD700
+    style P8 fill:#1a2e2e,color:#00CFCF,stroke:#00CFCF
+```
+
+| Painel | Query Prometheus |
+|--------|----------------|
+| Status do Modelo | `max(model_loaded)` |
+| RPS por endpoint | `sum by (handler) (rate(http_requests_total[1m]))` |
+| Latência HTTP p95 | `histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m])))` |
+| Tempo de Inferência | `rate(prediction_duration_seconds_sum[2m]) / rate(prediction_duration_seconds_count[2m]) * 1000` |
+| RAM | `max by (job) (process_resident_memory_bytes)` |
+| CPU | `rate(process_cpu_seconds_total{job=~"lstm-api.*"}[1m])` |
+| Total Previsões | `sum by (status) (predictions_total)` |
+| Últimas Previsões | `max by (symbol) (last_prediction_value)` |
 
 ---
 

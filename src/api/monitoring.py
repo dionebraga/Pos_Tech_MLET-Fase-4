@@ -5,6 +5,20 @@ import time
 
 from prometheus_client import Counter, Gauge, Histogram
 
+# ----- HTTP (instrumentação automática via middleware) ------------- #
+HTTP_REQUESTS_TOTAL = Counter(
+    "http_requests_total",
+    "Total de requisições HTTP recebidas",
+    ["method", "handler", "status"],
+)
+
+HTTP_REQUEST_DURATION = Histogram(
+    "http_request_duration_seconds",
+    "Duração das requisições HTTP em segundos",
+    ["method", "handler"],
+    buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0),
+)
+
 # ----- Contadores ------------------------------------------------- #
 PREDICTIONS_TOTAL = Counter(
     "predictions_total",
@@ -41,12 +55,15 @@ LAST_PREDICTION_VALUE = Gauge(
 
 def initialize_metrics(symbols: list[str] | None = None) -> None:
     """Pre-inicializa label combinations para que as métricas apareçam no /metrics
-    mesmo antes da primeira previsão (evita 'No data' no Grafana).
-
-    Histogramas recebem uma observação mínima (0.001 s) para que rate() e
-    histogram_quantile() retornem 0 em vez de NaN quando ainda não há previsões.
-    Gauges recebem .set(0) explícito para garantir que a série existe no Prometheus.
+    mesmo antes da primeira requisição (evita 'No data' no Grafana).
     """
+    # HTTP — endpoints mais comuns
+    for method in ("GET", "POST"):
+        for handler in ("/", "/health", "/predict", "/predict/symbol", "/model/info", "/docs"):
+            HTTP_REQUESTS_TOTAL.labels(method=method, handler=handler, status=200)
+            HTTP_REQUEST_DURATION.labels(method=method, handler=handler).observe(0.001)
+
+    # Previsões
     for ep in ("/predict", "/predict/symbol"):
         PREDICTION_DURATION.labels(endpoint=ep).observe(0.001)
         PREDICTIONS_TOTAL.labels(endpoint=ep, status="success")

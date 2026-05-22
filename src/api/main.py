@@ -7,16 +7,18 @@ Prometheus para monitoramento em produção.
 """
 import logging
 import sys
+import time
 from contextlib import asynccontextmanager
 from datetime import datetime
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import make_asgi_app
+from starlette.routing import Match
 
 from src import __version__
 from src.api.routes import router
-from src.api.monitoring import MODEL_LOADED, initialize_metrics
+from src.api.monitoring import MODEL_LOADED, HTTP_REQUESTS_TOTAL, HTTP_REQUEST_DURATION, initialize_metrics
 from src.config import settings
 from src.predict import StockPredictor
 
@@ -105,6 +107,37 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def prometheus_http_middleware(request: Request, call_next):
+    start = time.perf_counter()
+
+    # Resolve o nome da rota (ex: /predict/symbol) em vez do path com params
+    handler = request.url.path
+    for route in request.app.routes:
+        match, _ = route.matches(request.scope)
+        if match == Match.FULL:
+            handler = route.path
+            break
+
+    response = await call_next(request)
+    duration = time.perf_counter() - start
+
+    # Ignora o scrape do próprio Prometheus para não poluir as métricas
+    if handler != "/metrics":
+        HTTP_REQUESTS_TOTAL.labels(
+            method=request.method,
+            handler=handler,
+            status=response.status_code,
+        ).inc()
+        HTTP_REQUEST_DURATION.labels(
+            method=request.method,
+            handler=handler,
+        ).observe(duration)
+
+    return response
+
 
 app.include_router(router)
 
