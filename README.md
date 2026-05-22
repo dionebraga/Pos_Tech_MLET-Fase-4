@@ -1,14 +1,3 @@
----
-title: LSTM Stock Prediction API
-emoji: 📈
-colorFrom: blue
-colorTo: purple
-sdk: docker
-app_port: 8000
-pinned: false
-license: mit
----
-
 <div align="center">
 
 # Tech Challenge Fase 4
@@ -16,10 +5,11 @@ license: mit
 
 **PosTech · Machine Learning Engineering · FIAP**
 
-[![API Status](https://img.shields.io/badge/API-Online-00FF88?style=for-the-badge&logo=fastapi)](https://lstm-stock-api.onrender.com/health)
-[![Dashboard](https://img.shields.io/badge/Dashboard-Live-5B9DFF?style=for-the-badge&logo=streamlit)](https://lstm-stock-dashboard.onrender.com)
-[![Python](https://img.shields.io/badge/Python-3.10+-B794F4?style=for-the-badge&logo=python)](https://python.org)
-[![TensorFlow](https://img.shields.io/badge/TensorFlow-2.x-FF6F00?style=for-the-badge&logo=tensorflow)](https://tensorflow.org)
+[![API](https://img.shields.io/badge/API-Online-00FF88?style=for-the-badge&logo=fastapi&logoColor=black)](https://pos-tech-mlet-fase-4.onrender.com/health)
+[![Dashboard](https://img.shields.io/badge/Dashboard-Live-5B9DFF?style=for-the-badge&logo=streamlit&logoColor=white)](https://lstm-stock-dashboard.onrender.com)
+[![Python](https://img.shields.io/badge/Python-3.10+-B794F4?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![TensorFlow](https://img.shields.io/badge/TensorFlow-2.17-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white)](https://tensorflow.org)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://docker.com)
 [![License](https://img.shields.io/badge/License-MIT-A1A1AA?style=for-the-badge)](LICENSE)
 
 </div>
