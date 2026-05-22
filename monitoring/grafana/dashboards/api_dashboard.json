@@ -31,8 +31,14 @@
       },
       "targets": [
         {
-          "expr": "model_loaded",
+          "expr": "max(model_loaded{job=\"lstm-api-local\"})",
+          "legendFormat": "Local",
           "refId": "A"
+        },
+        {
+          "expr": "max(model_loaded{job=\"lstm-api-prod\"})",
+          "legendFormat": "Prod",
+          "refId": "B"
         }
       ],
       "title": "Status do Modelo",
@@ -95,13 +101,13 @@
       "id": 4,
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum by (le, endpoint) (increase(prediction_duration_seconds_bucket[1h]))) * 1000",
-          "legendFormat": "p95 - {{endpoint}}",
+          "expr": "rate(prediction_duration_seconds_sum[2m]) / rate(prediction_duration_seconds_count[2m]) * 1000",
+          "legendFormat": "avg ms - {{endpoint}}",
           "refId": "A"
         },
         {
-          "expr": "rate(prediction_duration_seconds_sum[5m]) / rate(prediction_duration_seconds_count[5m]) * 1000",
-          "legendFormat": "avg - {{endpoint}}",
+          "expr": "histogram_quantile(0.95, sum by (le, endpoint) (rate(prediction_duration_seconds_bucket[2m]))) * 1000",
+          "legendFormat": "p95 ms - {{endpoint}}",
           "refId": "B"
         }
       ],
