@@ -6,15 +6,15 @@
   "lstm_units_1": 64,
   "lstm_units_2": 64,
   "dropout_rate": 0.2,
-  "epochs_trained": 16,
+  "epochs_trained": 14,
   "batch_size": 32,
   "learning_rate": 0.001,
   "train_samples": 1269,
   "test_samples": 318,
   "metrics": {
-    "mae": 4.89536190032959,
-    "rmse": 6.484578609466553,
-    "mape": 2.5969794020056725
+    "mae": 4.784182548522949,
+    "rmse": 6.217347145080566,
+    "mape": 2.584913931787014
   },
-  "trained_at": "2026-05-10T18:50:24.230507Z"
+  "trained_at": "2026-05-22T18:29:34.379880+00:00"
 }
