@@ -87,7 +87,7 @@
       "fieldConfig": {
         "defaults": {
           "color": {"mode": "palette-classic"},
-          "unit": "s",
+          "unit": "ms",
           "noValue": "Sem previsões ainda"
         }
       },
@@ -95,9 +95,14 @@
       "id": 4,
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum by (le, endpoint) (rate(prediction_duration_seconds_bucket[30m])))",
+          "expr": "histogram_quantile(0.95, sum by (le, endpoint) (increase(prediction_duration_seconds_bucket[1h]))) * 1000",
           "legendFormat": "p95 - {{endpoint}}",
           "refId": "A"
+        },
+        {
+          "expr": "rate(prediction_duration_seconds_sum[5m]) / rate(prediction_duration_seconds_count[5m]) * 1000",
+          "legendFormat": "avg - {{endpoint}}",
+          "refId": "B"
         }
       ],
       "title": "Tempo de Inferência do Modelo",
@@ -160,32 +165,39 @@
         "defaults": {
           "color": {"mode": "palette-classic"},
           "unit": "currencyUSD",
-          "noValue": "—",
+          "noValue": "Sem previsões",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {"text": "Aguardando previsão", "color": "orange"}
+              }
+            }
+          ],
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"color": "blue", "value": null}
+              {"color": "blue", "value": null},
+              {"color": "green", "value": 1}
             ]
           }
         }
       },
       "gridPos": {"h": 6, "w": 12, "x": 12, "y": 24},
       "id": 8,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "textMode": "value_and_name",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"]
-        }
-      },
       "targets": [
         {
-          "expr": "last_prediction_value > 0",
+          "expr": "last_prediction_value",
           "legendFormat": "{{symbol}}",
           "refId": "A"
         }
       ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "reduceOptions": {"calcs": ["lastNotNull"]}
+      },
       "title": "Últimas Previsões por Símbolo",
       "type": "stat"
     }

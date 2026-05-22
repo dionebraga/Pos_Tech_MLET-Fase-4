@@ -15,11 +15,11 @@ scrape_configs:
           service: 'lstm-stock-api'
           env: 'production'
 
-  # API LSTM local (docker-compose)
+  # API LSTM local — uvicorn no host (docker-compose ou direto)
   - job_name: 'lstm-api-local'
     metrics_path: /metrics
     static_configs:
-      - targets: ['api:8000']
+      - targets: ['host.docker.internal:8000']
         labels:
           service: 'lstm-stock-api'
           env: 'local'
