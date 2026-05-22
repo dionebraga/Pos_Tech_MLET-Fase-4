@@ -123,8 +123,8 @@
       "id": 5,
       "targets": [
         {
-          "expr": "process_resident_memory_bytes",
-          "legendFormat": "RAM",
+          "expr": "max by (job) (process_resident_memory_bytes)",
+          "legendFormat": "RAM - {{job}}",
           "refId": "A"
         }
       ],
@@ -140,8 +140,8 @@
       "id": 6,
       "targets": [
         {
-          "expr": "rate(process_cpu_seconds_total[1m])",
-          "legendFormat": "CPU",
+          "expr": "rate(process_cpu_seconds_total{job=~\"lstm-api.*\"}[1m])",
+          "legendFormat": "CPU - {{job}}",
           "refId": "A"
         }
       ],
@@ -193,7 +193,7 @@
       "id": 8,
       "targets": [
         {
-          "expr": "last_prediction_value",
+          "expr": "max by (symbol) (last_prediction_value)",
           "legendFormat": "{{symbol}}",
           "refId": "A"
         }
