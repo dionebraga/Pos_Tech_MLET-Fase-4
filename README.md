@@ -240,47 +240,47 @@ mindmap
 
 ```mermaid
 flowchart TD
-    subgraph DADOS["  📦 Camada de Dados  "]
-        YF["☁️ Yahoo Finance\nyfinance ≥ 1.x · OHLCV\n2 093 linhas · AAPL 2018–2026"]
-        CSV["💾 Cache CSV\nAAAPL_2018_2026.csv\nfallback offline"]
+    subgraph DADOS["  📦 1 · Dados  "]
+        YF["☁️ Yahoo Finance\nyfinance ≥ 1.x · AAPL OHLCV\n2 093 linhas · 2018-01-02 → 2026-04-30"]
+        CSV["💾 AAPL_2018_2026.csv\ncache local · fallback offline"]
     end
 
-    subgraph TREINO["  🧠 Camada de Treino  "]
-        DP["⚙️ Pré-Processamento\nMinMaxScaler · Janela 60d\nSliding Window · Split 80/20"]
-        ML["🔵 LSTM Training\nTensorFlow 2.17 · Keras 3.x\n2× LSTM(64) + Dropout(0.2)\nAdam · MSE · EarlyStopping"]
-        ART["💾 Artefatos\nlstm_model.keras\nscaler.pkl · metadata.json"]
+    subgraph TREINO["  🧠 2 · Treino  "]
+        DP["⚙️ Pré-Processamento\nMinMaxScaler [0,1] · fit só no treino\nSliding Window 60d · Split 80/20 temporal"]
+        ML["🔵 LSTM  2 × 64  +  Dropout 0.2\nTensorFlow 2.17 · Keras 3.x · Adam\nMSE loss · EarlyStopping patience=10\n29 épocas · melhor checkpoint época 19"]
+        ART["💾 Artefatos Serializados\nlstm_model.keras · scaler.pkl\nmetadata.json  MAE 5.78 · MAPE 2.48%"]
     end
 
-    subgraph SERVE["  ⚡ Camada de Serviço  "]
-        API["🚀 FastAPI · Uvicorn\nPOST /predict · /predict/symbol\nGET /health · /model/info\nGET /metrics · /docs"]
+    subgraph SERVE["  ⚡ 3 · Serviço  "]
+        API["🚀 FastAPI · Uvicorn\nPOST /predict  ·  /predict/symbol\nGET  /health  ·  /model/info\nGET  /metrics  ·  /docs  ·  /api/chart/{symbol}"]
     end
 
-    subgraph OBS["  📊 Observabilidade  "]
-        PROM["📊 Prometheus\nscrape /metrics · 15s\ntime-series DB"]
-        GRAF["📈 Grafana\n8 painéis · auto-provisioned\nlocalhost:3000"]
+    subgraph OBS["  📊 4 · Observabilidade  "]
+        PROM["📊 Prometheus\nscrape /metrics · intervalo 15s\ntime-series DB local"]
+        GRAF["📈 Grafana\n8 painéis · auto-provisioned\nRPS · Latência · RAM · CPU · Inferência"]
     end
 
-    subgraph UI["  🖥️ Interface  "]
-        DASH["🖥️ Streamlit Dashboard\nCandlestick · RSI · MACD\nMonte Carlo · Fibonacci\nPrevisões LSTM D+1–D+5"]
+    subgraph UI["  🖥️ 5 · Interface  "]
+        DASH["🖥️ Streamlit Dashboard\nCandlestick · RSI · MACD · Bollinger\nMonte Carlo · Fibonacci\nForecast LSTM D+1 → D+5"]
     end
 
-    YF -->|"download histórico"| DP
-    CSV -.->|"fallback"| DP
-    DP -->|"X:(n,60,1) · y:(n,1)"| ML
-    ML -->|"MAE 5.78 · RMSE 7.46 · MAPE 2.48%"| ART
-    ART -->|"carregado no startup"| API
-    API -->|"HTTP middleware · 15s"| PROM
-    PROM -->|"datasource"| GRAF
-    API -->|"REST · JSON · ~87ms"| DASH
+    YF      -->|"OHLCV histórico"| DP
+    CSV     -.->|"fallback offline"| DP
+    DP      -->|"X (n,60,1) · y (n,1)"| ML
+    ML      -->|"MAE 5.78 · RMSE 7.46 · MAPE 2.48%"| ART
+    ART     -->|"model.load() no startup"| API
+    API     -->|"HTTP middleware · scrape 15s"| PROM
+    PROM    -->|"datasource PromQL"| GRAF
+    API     -->|"REST JSON · ~87 ms"| DASH
 
     style YF   fill:#0d1117,color:#58a6ff,stroke:#388bfd,stroke-width:2px
-    style CSV  fill:#0d1117,color:#8b949e,stroke:#30363d,stroke-width:1px
+    style CSV  fill:#0d1117,color:#8b949e,stroke:#30363d,stroke-width:1px,stroke-dasharray:4
     style DP   fill:#0d1117,color:#79c0ff,stroke:#388bfd,stroke-width:2px
-    style ML   fill:#0d1117,color:#ffa657,stroke:#e3b341,stroke-width:2px
-    style ART  fill:#0d1117,color:#d2a8ff,stroke:#8b949e,stroke-width:2px
-    style API  fill:#0d1117,color:#56d364,stroke:#3fb950,stroke-width:2px
+    style ML   fill:#0d1117,color:#ffa657,stroke:#e3b341,stroke-width:3px
+    style ART  fill:#0d1117,color:#d2a8ff,stroke:#a371f7,stroke-width:2px
+    style API  fill:#0d1117,color:#56d364,stroke:#3fb950,stroke-width:3px
     style PROM fill:#0d1117,color:#ff7b72,stroke:#f85149,stroke-width:2px
-    style GRAF fill:#0d1117,color:#ff7b72,stroke:#f85149,stroke-width:2px
+    style GRAF fill:#0d1117,color:#ffa657,stroke:#e3b341,stroke-width:2px
     style DASH fill:#0d1117,color:#79c0ff,stroke:#388bfd,stroke-width:2px
 ```
 
@@ -291,27 +291,32 @@ flowchart TD
 ```mermaid
 sequenceDiagram
     autonumber
-    actor 👤 as Cliente
-    participant 🚀 as FastAPI
-    participant ☁️ as Yahoo Finance
-    participant 🧠 as LSTM Model
-    participant 📊 as Prometheus
+    actor U as 👤 Cliente
+    participant A as ⚡ FastAPI
+    participant Y as ☁️ Yahoo Finance
+    participant M as 🧠 LSTM Model
+    participant P as 📊 Prometheus
 
-    👤 ->> 🚀 : POST /predict/symbol<br/>{"symbol":"AAPL","days_ahead":5}
-    Note over 🚀: middleware inicia timer
+    U  ->>  A : POST /predict/symbol<br/>{ "symbol": "AAPL", "days_ahead": 5 }
+    Note over A: middleware: start = perf_counter()
 
-    🚀 ->> ☁️ : GET últimos 60 fechamentos de AAPL
-    ☁️ -->> 🚀 : OHLCV histórico
+    A  ->>  Y : yfinance.Ticker("AAPL").history(last 120d)
+    Y -->>  A : DataFrame OHLCV · 60+ pregões
+    Note over A: closes.iloc[-60:] → janela_60d<br/>scaler.transform(janela_60d) → [0, 1]
 
-    loop D+1 até D+5
-        🚀 ->> 🧠 : scaler.transform(janela_60d)
-        🧠 -->> 🚀 : preço previsto (USD)
+    rect rgb(30, 41, 59)
+        Note over A, M: Loop auto-regressivo — 5 iterações
+        loop D+1 até D+5
+            A  ->>  M : model.predict(shape=(1,60,1))
+            M -->>  A : escalar normalizado ∈ [0, 1]
+            Note over A: inverse_transform → preço USD<br/>desliza janela: descarta t-59, injeta D+n
+        end
     end
 
-    🚀 ->> 📊 : http_requests_total++<br/>prediction_duration_seconds.observe()
-    Note over 🚀: middleware registra latência total
+    A  ->>  P : http_requests_total{handler="/predict/symbol"}.inc()<br/>prediction_duration_seconds.observe(Δt)
+    Note over A: middleware: latência total registrada
 
-    🚀 -->> 👤 : 200 OK · JSON<br/>{"predictions":[...],"inference_time_ms":87.3}
+    A -->>  U : 200 OK · application/json<br/>{ "predictions": [...5 dias...], "inference_time_ms": 87.3 }
 ```
 
 ---
@@ -681,27 +686,27 @@ python -m src.train --symbol PETR4.SA --start 2019-01-01 --end 2026-05-01 --epoc
 
 ```mermaid
 flowchart TD
-    I["📥 Input · batch × 60 × 1\n60 preços normalizados [0, 1]"]
+    I["📥 Input Layer\nbatch × 60 × 1\n60 fechamentos normalizados ∈ [0, 1]"]
 
-    subgraph LSTM1["  Bloco 1  "]
-        L1["🔵 LSTM · 64 unidades · return_sequences=True\noutput: batch × 60 × 64"]
-        D1["⬜ Dropout  0.2"]
+    subgraph LSTM1["  Bloco 1 — Padrões de Curto Prazo  "]
+        L1["🔵 LSTM · 64 unidades\nreturn_sequences = True\n─────────────────────\noutput: batch × 60 × 64\n→ mantém toda a sequência temporal"]
+        D1["⬜ Dropout  p = 0.2\ndesativa 20% dos neurônios por época\n→ previne co-adaptação"]
     end
 
-    subgraph LSTM2["  Bloco 2  "]
-        L2["🔵 LSTM · 64 unidades · return_sequences=False\noutput: batch × 64"]
-        D2["⬜ Dropout  0.2"]
+    subgraph LSTM2["  Bloco 2 — Síntese de Longo Prazo  "]
+        L2["🔵 LSTM · 64 unidades\nreturn_sequences = False\n─────────────────────\noutput: batch × 64\n→ colapsa sequência em vetor de contexto"]
+        D2["⬜ Dropout  p = 0.2\n→ regularização final antes da saída"]
     end
 
-    O["🟢 Dense(1) · linear\n→ preço D+1 desnormalizado (USD)"]
+    O["🟢 Dense(1) · ativação linear\nbatch × 1  →  escalar normalizado [0, 1]\n→  inverse_transform  →  preço D+1 (USD)"]
 
     I --> L1 --> D1 --> L2 --> D2 --> O
 
     style I  fill:#0d1117,color:#58a6ff,stroke:#388bfd,stroke-width:2px
     style L1 fill:#0d1117,color:#ffa657,stroke:#e3b341,stroke-width:2px
-    style D1 fill:#0d1117,color:#8b949e,stroke:#30363d
+    style D1 fill:#0d1117,color:#8b949e,stroke:#30363d,stroke-width:1px,stroke-dasharray:4
     style L2 fill:#0d1117,color:#ffa657,stroke:#e3b341,stroke-width:2px
-    style D2 fill:#0d1117,color:#8b949e,stroke:#30363d
+    style D2 fill:#0d1117,color:#8b949e,stroke:#30363d,stroke-width:1px,stroke-dasharray:4
     style O  fill:#0d1117,color:#56d364,stroke:#3fb950,stroke-width:2px
 ```
 
@@ -730,27 +735,30 @@ flowchart TD
 > Cada pregão atualiza 3 portões que decidem o que lembrar, aprender e revelar — resolvendo o problema do gradiente que vanish em RNNs simples.
 
 ```mermaid
-flowchart LR
-    X["📊 x_t\npreço normalizado\n[ 0 … 1 ]"]
-    H["🔁 h_t-1\nestado oculto\npregão anterior"]
-
-    subgraph CELL["  Célula LSTM · pregão t  "]
-        direction TB
-        FG["🔴 Forget Gate\nσ · Wf · [ h, x ]\n'quanto esquecer do passado'"]
-        IG["🟡 Input Gate\nσ · Wi · [ h, x ]\n'quanto gravar agora'"]
-        CS["🔵 Cell State  C_t\nC_t = f ⊗ C_{t-1}  +  i ⊗ g\n'memória de longo prazo'"]
-        OG["🟢 Output Gate\nσ · Wo · [ h, x ]\n'quanto revelar'"]
+flowchart TD
+    subgraph IN["  Entradas · pregão t  "]
+        direction LR
+        X["📊 x_t\npreço normalizado ∈ [0, 1]"]
+        H["🔁 h_{t-1}\nestado oculto anterior"]
     end
 
-    OUT["🔮 h_t\n→ Dense(1)\npreço D+1 (USD)"]
+    FG["🔴 Forget Gate  f_t\nf_t = σ( Wf · [h_{t-1}, x_t] + bf )\n'quanto do Cell State anterior preservar'"]
 
-    X & H --> FG --> CS
-    X & H --> IG --> CS
-    X & H --> OG
+    IG["🟡 Input Gate  i_t + Candidato g_t\ni_t = σ( Wi · [h,x] + bi )\ng_t = tanh( Wc · [h,x] + bc )\n'quanto da nova informação absorver'"]
+
+    CS["🔵 Cell State  C_t\nC_t = f_t ⊗ C_{t-1}  +  i_t ⊗ g_t\n─────────────────────────────────\n'memória de longo prazo — persiste através dos 60 pregões'"]
+
+    OG["🟢 Output Gate  o_t\no_t = σ( Wo · [h,x] + bo )\nh_t = o_t ⊗ tanh( C_t )\n'quanto do Cell State revelar como saída'"]
+
+    OUT["🔮 h_t  →  Dense(1)  →  inverse_transform\npreço previsto D+1 (USD)"]
+
+    IN --> FG --> CS
+    IN --> IG --> CS
+    IN --> OG
     CS --> OG --> OUT
 
     style X   fill:#0d1117,color:#58a6ff,stroke:#388bfd,stroke-width:2px
-    style H   fill:#0d1117,color:#8b949e,stroke:#30363d
+    style H   fill:#0d1117,color:#8b949e,stroke:#30363d,stroke-width:2px
     style FG  fill:#0d1117,color:#ff7b72,stroke:#f85149,stroke-width:2px
     style IG  fill:#0d1117,color:#e3b341,stroke:#d29922,stroke-width:2px
     style CS  fill:#0d1117,color:#79c0ff,stroke:#388bfd,stroke-width:3px
@@ -762,30 +770,49 @@ flowchart LR
 
 > A mesma lógica de tokenização de texto: cada dia é um token, a janela de 60 dias é a sequência de entrada.
 
-```mermaid
-flowchart LR
-    subgraph WIN["  Janela · últimos 60 pregões  "]
-        direction LR
-        W1["📅 t-59\n$168"] --> W2["📅 t-58\n$170"] --> W3["··· 56d ···"] --> W59["📅 t-1\n$195"] --> W60["📅 t\n$196"]
-    end
-
-    subgraph NORM["  MinMaxScaler → [ 0, 1 ]  "]
-        N1["0.41"] --> N2["0.45"] --> N3["···"] --> N59["0.92"] --> N60["0.93"]
-    end
-
-    subgraph FWD["  Forward Pass  "]
-        M["🧠 LSTM 64\nreturn_sequences=True\n↓\nLSTM 64\nreturn_sequences=False\n↓\nDense(1) → escalar\n↓\ninverse_transform"]
-    end
-
-    WIN -->|"normaliza"| NORM
-    NORM -->|"shape (1, 60, 1)"| FWD
-    FWD --> R["💵 D+1\n$197.83  +0.73%"]
-
-    style W60 fill:#0d1117,color:#ffa657,stroke:#e3b341,stroke-width:2px
-    style N60 fill:#0d1117,color:#ffa657,stroke:#e3b341
-    style M   fill:#0d1117,color:#ffa657,stroke:#e3b341,stroke-width:2px
-    style R   fill:#0d1117,color:#56d364,stroke:#3fb950,stroke-width:2px
-```
+<table>
+<thead>
+<tr>
+<th colspan="9" align="center">Janela Deslizante — 60 Pregões de Fechamento (AAPL)</th>
+</tr>
+<tr>
+<th align="center"><sub>Pregão</sub></th>
+<th align="center"><sub>t−59</sub></th>
+<th align="center"><sub>t−58</sub></th>
+<th align="center"><sub>···</sub></th>
+<th align="center"><sub>t−2</sub></th>
+<th align="center"><sub>t−1</sub></th>
+<th align="center"><sub><b>t (hoje)</b></sub></th>
+<th align="center"><sub>→</sub></th>
+<th align="center"><sub><b>D+1</b></sub></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center"><sub>Preço USD</sub></td>
+<td align="center">$168.20</td>
+<td align="center">$170.15</td>
+<td align="center">···</td>
+<td align="center">$194.50</td>
+<td align="center">$195.80</td>
+<td align="center"><b>$196.40</b></td>
+<td align="center" rowspan="2"><b>🧠 LSTM<br/>64+64<br/>↓<br/>Dense(1)<br/>↓<br/>inverse<br/>transform</b></td>
+<td align="center" rowspan="2"><b>$197.83</b><br/><sub>+0.73%</sub></td>
+</tr>
+<tr>
+<td align="center"><sub>Normalizado</sub></td>
+<td align="center"><sub>0.412</sub></td>
+<td align="center"><sub>0.451</sub></td>
+<td align="center"><sub>···</sub></td>
+<td align="center"><sub>0.912</sub></td>
+<td align="center"><sub>0.921</sub></td>
+<td align="center"><b><sub>0.931</sub></b></td>
+</tr>
+<tr>
+<td colspan="9" align="center"><sub>MinMaxScaler fit apenas no conjunto de treino · shape de entrada: <code>(1, 60, 1)</code></sub></td>
+</tr>
+</tbody>
+</table>
 
 ### Geração Auto-Regressiva D+1 → D+5
 
