@@ -41,15 +41,20 @@ LAST_PREDICTION_VALUE = Gauge(
 
 def initialize_metrics(symbols: list[str] | None = None) -> None:
     """Pre-inicializa label combinations para que as métricas apareçam no /metrics
-    mesmo antes da primeira previsão (evita 'No data' no Grafana)."""
+    mesmo antes da primeira previsão (evita 'No data' no Grafana).
+
+    Histogramas recebem uma observação mínima (0.001 s) para que rate() e
+    histogram_quantile() retornem 0 em vez de NaN quando ainda não há previsões.
+    Gauges recebem .set(0) explícito para garantir que a série existe no Prometheus.
+    """
     for ep in ("/predict", "/predict/symbol"):
-        PREDICTION_DURATION.labels(endpoint=ep)
+        PREDICTION_DURATION.labels(endpoint=ep).observe(0.001)
         PREDICTIONS_TOTAL.labels(endpoint=ep, status="success")
         PREDICTIONS_TOTAL.labels(endpoint=ep, status="error")
     PREDICTION_ERRORS.labels(error_type="ValueError")
     PREDICTION_ERRORS.labels(error_type="Exception")
     for sym in (symbols or ["AAPL", "GOOGL", "MSFT", "AMZN", "NVDA"]):
-        LAST_PREDICTION_VALUE.labels(symbol=sym)
+        LAST_PREDICTION_VALUE.labels(symbol=sym).set(0)
 
 
 class TrackPrediction:
@@ -63,7 +68,7 @@ class TrackPrediction:
         self.start = time.perf_counter()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, _exc_val, _exc_tb):
         duration = time.perf_counter() - self.start
         PREDICTION_DURATION.labels(endpoint=self.endpoint).observe(duration)
         if exc_type is None:

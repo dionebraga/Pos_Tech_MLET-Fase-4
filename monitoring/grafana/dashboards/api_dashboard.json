@@ -18,7 +18,8 @@
               {"color": "red", "value": null},
               {"color": "green", "value": 1}
             ]
-          }
+          },
+          "noValue": "Offline"
         }
       },
       "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
@@ -84,13 +85,17 @@
     {
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "fieldConfig": {
-        "defaults": {"color": {"mode": "palette-classic"}, "unit": "s"}
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "unit": "s",
+          "noValue": "Sem previsões ainda"
+        }
       },
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
       "id": 4,
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum by (le, endpoint) (rate(prediction_duration_seconds_bucket[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le, endpoint) (rate(prediction_duration_seconds_bucket[30m])))",
           "legendFormat": "p95 - {{endpoint}}",
           "refId": "A"
         }
@@ -152,13 +157,31 @@
     {
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "fieldConfig": {
-        "defaults": {"color": {"mode": "thresholds"}, "unit": "currencyUSD"}
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "unit": "currencyUSD",
+          "noValue": "—",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "blue", "value": null}
+            ]
+          }
+        }
       },
       "gridPos": {"h": 6, "w": 12, "x": 12, "y": 24},
       "id": 8,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        }
+      },
       "targets": [
         {
-          "expr": "last_prediction_value",
+          "expr": "last_prediction_value > 0",
           "legendFormat": "{{symbol}}",
           "refId": "A"
         }
@@ -172,11 +195,11 @@
   "style": "dark",
   "tags": ["lstm", "stocks"],
   "templating": {"list": []},
-  "time": {"from": "now-15m", "to": "now"},
+  "time": {"from": "now-1h", "to": "now"},
   "timepicker": {},
   "timezone": "browser",
   "title": "LSTM Stock API — Monitoring",
   "uid": "lstm-api-dashboard",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }
