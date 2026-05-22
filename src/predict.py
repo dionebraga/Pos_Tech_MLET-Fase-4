@@ -9,8 +9,8 @@ import logging
 from pathlib import Path
 from typing import List
 
+import keras
 import numpy as np
-import tensorflow as tf
 
 from src.preprocessor import load_scaler
 
@@ -32,7 +32,7 @@ class StockPredictor:
             )
 
         logger.info("Carregando modelo de %s", model_path)
-        self.model = tf.keras.models.load_model(model_path)
+        self.model = keras.models.load_model(model_path)
 
         logger.info("Carregando scaler de %s", scaler_path)
         self.scaler = load_scaler(scaler_path)

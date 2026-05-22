@@ -26,7 +26,7 @@ def compute_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> Dict[str, float]:
     y_pred = np.asarray(y_pred).flatten()
 
     mae = mean_absolute_error(y_true, y_pred)
-    rmse = float(np.sqrt(mean_squared_error(y_true, y_pred)))
+    rmse = np.sqrt(mean_squared_error(y_true, y_pred))
 
     # MAPE manual para evitar divisão por zero
     mask = y_true != 0
@@ -35,7 +35,7 @@ def compute_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> Dict[str, float]:
     return {
         "mae": float(mae),
         "rmse": float(rmse),
-        "mape": float(mape),
+        "mape": mape,
     }
 
 

@@ -1,7 +1,7 @@
 """
 src/data_loader.py
 ------------------
-Carrega dados históricos de ações usando yfinance + curl_cffi.
+Carrega dados históricos de ações usando yfinance 1.x.
 
 Construído por: Dione Braga Ferreira
 Tech Challenge Fase 4 — PósTech MLET FIAP
@@ -21,27 +21,15 @@ def fetch_stock_data(
     end: str,
     interval: str = "1d",
 ) -> pd.DataFrame:
-    """Baixa dados históricos de uma ação via yfinance.
+    """Baixa dados históricos de uma ação via yfinance 1.x.
 
-    Usa curl_cffi para contornar o bloqueio do Yahoo Finance (necessário no
-    yfinance >= 0.2.50, que exige session do curl_cffi e não mais requests).
+    yfinance >= 1.0 gerencia autenticação/cookies internamente.
+    Passar curl_cffi.Session causa incompatibilidade — não é mais necessário.
     """
-    try:
-        from curl_cffi import requests as cffi_requests
-    except ImportError as exc:
-        raise ImportError(
-            "curl_cffi é obrigatório para o yfinance funcionar. "
-            "Instale com: pip install curl_cffi"
-        ) from exc
+    logger.info("Baixando dados de %s [%s a %s, interval=%s]", symbol, start, end, interval)
 
-    logger.info(f"Baixando dados de {symbol} [{start} a {end}, interval={interval}]")
-
-    session = cffi_requests.Session(impersonate="chrome")
-    ticker = yf.Ticker(symbol, session=session)
-
-    df = ticker.history(
-        start=start, end=end, interval=interval, auto_adjust=False,
-    )
+    ticker = yf.Ticker(symbol)
+    df = ticker.history(start=start, end=end, interval=interval)
 
     if df.empty:
         raise ValueError(
@@ -50,15 +38,18 @@ def fetch_stock_data(
         )
 
     df = df.reset_index()
-    if isinstance(df["Date"].dtype, pd.DatetimeTZDtype):
-        df["Date"] = df["Date"].dt.tz_localize(None)
 
-    logger.info(f"OK — {len(df)} registros baixados para {symbol}")
+    # Normaliza coluna de data (remove timezone se houver)
+    date_col = "Date" if "Date" in df.columns else df.columns[0]
+    if pd.api.types.is_datetime64tz_dtype(df[date_col]):
+        df[date_col] = df[date_col].dt.tz_convert(None)
+
+    logger.info("OK — %d registros baixados para %s", len(df), symbol)
     return df
 
 
 def fetch_recent_window(symbol: str, window_size: int = 60) -> pd.Series:
-    """Busca os últimos `window_size` + 30 dias de fechamento para previsão.
+    """Busca os últimos `window_size` preços de fechamento para previsão.
 
     Args:
         symbol: Ticker da ação (ex: AAPL, PETR4.SA).
@@ -67,23 +58,17 @@ def fetch_recent_window(symbol: str, window_size: int = 60) -> pd.Series:
     Returns:
         pd.Series com window_size preços de fechamento (mais antigo → recente).
     """
-    try:
-        from curl_cffi import requests as cffi_requests
-    except ImportError as exc:
-        raise ImportError("curl_cffi é obrigatório.") from exc
-
     end = pd.Timestamp.now()
-    start = end - pd.DateOffset(days=window_size * 2)  # folga para dias úteis
+    start = end - pd.DateOffset(days=window_size * 2)  # folga para fins de semana/feriados
 
     logger.info("Buscando janela recente para %s (%d dias)", symbol, window_size)
-    session = cffi_requests.Session(impersonate="chrome")
-    ticker = yf.Ticker(symbol, session=session)
+    ticker = yf.Ticker(symbol)
     df = ticker.history(start=start.strftime("%Y-%m-%d"), end=end.strftime("%Y-%m-%d"))
 
     if df.empty:
         raise ValueError(
             f"Nenhum dado retornado para '{symbol}'. "
-            f"Verifique o ticker e conectividade."
+            "Verifique o ticker e conectividade."
         )
 
     closes = df["Close"]
@@ -97,18 +82,22 @@ def fetch_recent_window(symbol: str, window_size: int = 60) -> pd.Series:
 
 
 def get_close_prices(df: pd.DataFrame) -> pd.Series:
-    """Extrai a coluna 'Close' do DataFrame baixado."""
-    return df["Close"]
+    """Extrai a coluna 'Close' do DataFrame, suportando colunas MultiIndex (yfinance 1.x)."""
+    close = df["Close"]
+    # yf.download() retorna MultiIndex quando há múltiplos tickers; converte para Series
+    if isinstance(close, pd.DataFrame):
+        close = close.iloc[:, 0]
+    return close.dropna()
 
 
 def save_raw_data(df: pd.DataFrame, path: str) -> None:
     df.to_csv(path, index=False)
-    logger.info(f"Dados salvos em: {path}")
+    logger.info("Dados salvos em: %s", path)
 
 
 def load_raw_data(path: str) -> pd.DataFrame:
     df = pd.read_csv(path, parse_dates=["Date"])
-    logger.info(f"Dados carregados de: {path} ({len(df)} registros)")
+    logger.info("Dados carregados de: %s (%d registros)", path, len(df))
     return df
 
 

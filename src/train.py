@@ -8,7 +8,7 @@ Uso:
 import argparse
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -116,7 +116,7 @@ def main() -> None:
         "train_samples": int(X_train.shape[0]),
         "test_samples": int(X_test.shape[0]),
         "metrics": metrics,
-        "trained_at": datetime.utcnow().isoformat() + "Z",
+        "trained_at": datetime.now(timezone.utc).isoformat(),
     }
     Path(args.metadata_path).parent.mkdir(parents=True, exist_ok=True)
     with open(args.metadata_path, "w", encoding="utf-8") as f:

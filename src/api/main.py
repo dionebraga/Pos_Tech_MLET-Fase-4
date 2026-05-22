@@ -12,7 +12,6 @@ from datetime import datetime
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
 from prometheus_client import make_asgi_app
 
 from src import __version__
@@ -106,10 +105,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-@app.get("/", include_in_schema=False)
-def root():
-    return RedirectResponse(url="/docs")
 
 app.include_router(router)
 

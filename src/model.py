@@ -8,8 +8,8 @@ e oferece bom equilíbrio entre capacidade e tempo de treinamento.
 import logging
 from typing import Tuple
 
-import tensorflow as tf
-from tensorflow.keras import layers, models, optimizers
+import keras
+from keras import layers, optimizers
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ def build_lstm_model(
     lstm_units_2: int = 64,
     dropout_rate: float = 0.2,
     learning_rate: float = 0.001,
-) -> tf.keras.Model:
+) -> keras.Model:
     """
     Constrói uma LSTM empilhada para previsão de 1 passo à frente.
 
@@ -43,7 +43,7 @@ def build_lstm_model(
     Returns:
         Modelo Keras compilado com Adam + MSE.
     """
-    model = models.Sequential(name="lstm_stock_predictor")
+    model = keras.Sequential(name="lstm_stock_predictor")
 
     model.add(layers.Input(shape=(window_size, n_features)))
 
@@ -76,15 +76,15 @@ def build_lstm_model(
     return model
 
 
-def get_callbacks(patience: int = 10) -> Tuple[tf.keras.callbacks.Callback, ...]:
+def get_callbacks(patience: int = 10) -> Tuple[keras.callbacks.Callback, ...]:
     """Callbacks padrão: Early Stopping + Reduce LR."""
-    early_stop = tf.keras.callbacks.EarlyStopping(
+    early_stop = keras.callbacks.EarlyStopping(
         monitor="val_loss",
         patience=patience,
         restore_best_weights=True,
         verbose=1,
     )
-    reduce_lr = tf.keras.callbacks.ReduceLROnPlateau(
+    reduce_lr = keras.callbacks.ReduceLROnPlateau(
         monitor="val_loss",
         factor=0.5,
         patience=5,

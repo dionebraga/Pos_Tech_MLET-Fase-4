@@ -42,9 +42,10 @@ def chart_proxy(symbol: str, range: str = "3mo", interval: str = "1d"):
         resp.raise_for_status()
         return resp.json()
     except Exception as e:
-        raise HTTPException(status_code=502, detail=str(e))
+        raise HTTPException(status_code=502, detail=str(e)) from e
 
 
+@router.get("/", include_in_schema=False)
 def _build_dashboard(request: Request) -> HTMLResponse:
     predictor = getattr(request.app.state, "predictor", None)
     md = predictor.metadata if predictor else {}
@@ -855,10 +856,10 @@ def predict_from_symbol(
     try:
         closes = fetch_recent_window(payload.symbol, predictor.window_size)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:  # noqa: BLE001
         logger.exception("Erro ao buscar dados do yfinance")
-        raise HTTPException(status_code=502, detail=f"Falha ao buscar dados: {e}")
+        raise HTTPException(status_code=502, detail=f"Falha ao buscar dados: {e}") from e
 
     last_close = float(closes.iloc[-1])
     last_date = str(closes.index[-1].date())
