@@ -43,7 +43,16 @@
 
 <br/>
 
-> **100% dados reais** — Yahoo Finance via proxy integrado. Modelo LSTM 2 camadas treinado em 6 anos de histórico. API + Dashboard + Monitoramento em produção no Render.
+<div align="center">
+
+| | |
+|:---:|:---|
+| 📡 | **100% dados reais** — Yahoo Finance · AAPL · Jan 2018 – Abr 2026 · 2 093 pregões |
+| 🧠 | LSTM 2×64 · Dropout 0.2 · 29 épocas · MAPE **2.48 %** · Acurácia **97.52 %** |
+| ☁️ | API + Dashboard + Prometheus + Grafana em produção no **Render** |
+| ⚡ | Inferência ~87 ms · Pydantic v2 · Health check · Swagger UI · Docker Compose |
+
+</div>
 
 <br/>
 
@@ -90,39 +99,43 @@
 <tr>
 
 <td align="center" valign="top" width="25%">
-
-### 🧠
-**Deep Learning Real**
-
-Rede LSTM 2 camadas treinada em série temporal histórica real, com split temporal correto (sem data leakage), EarlyStopping e validação por MAPE
-
+<br/>
+<b>🧠 Deep Learning Real</b>
+<br/><br/>
+LSTM 2×64 · Split 80/20 temporal sem <i>data leakage</i> · EarlyStopping · ReduceLROnPlateau · ModelCheckpoint · MAPE <b>2.48%</b>
+<br/><br/>
+<sub><code>TensorFlow 2.17</code> · <code>Keras 3.x</code> · <code>scikit-learn</code></sub>
+<br/>
 </td>
 
 <td align="center" valign="top" width="25%">
-
-### 🚀
-**Pronto para Produção**
-
-API containerizada (Docker), deploy automático no Render, lifespan handler, logging estruturado, tratamento de erros e health checks em todos os endpoints
-
+<br/>
+<b>🚀 Pronto para Produção</b>
+<br/><br/>
+Docker Compose · deploy automático no Render · lifespan handler · Pydantic v2 · logging estruturado · retry em cold start · <b>0 downtime</b>
+<br/><br/>
+<sub><code>FastAPI</code> · <code>Uvicorn</code> · <code>Docker</code> · <code>Render</code></sub>
+<br/>
 </td>
 
 <td align="center" valign="top" width="25%">
-
-### 📊
-**Observabilidade Total**
-
-Middleware HTTP que registra RPS, latência p50/p95/p99, tempo de inferência, RAM e CPU — 8 painéis pré-configurados no Grafana via Prometheus
-
+<br/>
+<b>📊 Observabilidade Total</b>
+<br/><br/>
+Middleware HTTP · RPS · latência p50/p95/p99 · inferência LSTM · RAM · CPU — <b>8 painéis</b> Grafana auto-provisioned
+<br/><br/>
+<sub><code>Prometheus</code> · <code>Grafana</code> · <code>prometheus-client</code></sub>
+<br/>
 </td>
 
 <td align="center" valign="top" width="25%">
-
-### 🖥️
-**Terminal de Trading**
-
-Dashboard Streamlit com 7 módulos: Candlestick, RSI, MACD, Bollinger Bands, Fibonacci, Monte Carlo e previsões LSTM D+1 a D+5 em tempo real
-
+<br/>
+<b>🖥️ Terminal de Trading</b>
+<br/><br/>
+<b>7 módulos</b>: Candlestick · RSI 14 · MACD · Bollinger Bands · Fibonacci · Monte Carlo · Forecast LSTM D+1 → D+5
+<br/><br/>
+<sub><code>Streamlit</code> · <code>Plotly</code> · <code>yfinance ≥1.x</code></sub>
+<br/>
 </td>
 
 </tr>
@@ -134,27 +147,39 @@ Dashboard Streamlit com 7 módulos: Candlestick, RSI, MACD, Bollinger Bands, Fib
 
 <table>
 <tr>
-<td align="center" width="30%">
+<td align="center" valign="top" width="30%">
 <br/>
-<b>📥 Passo 1 — Clone</b><br/><br/>
+<b>❶ Clone o repositório</b>
+<br/><br/>
 <code>git clone https://github.com/dionebraga/Pos_Tech_MLET-Fase-4.git</code><br/>
-<code>cd tech-challenge-fase4</code><br/><br/>
-<sub><i>~5 segundos</i></sub>
-</td>
-<td align="center" width="5%"><b>→</b></td>
-<td align="center" width="34%">
+<code>cd tech-challenge-fase4</code>
+<br/><br/>
+<sub>Pré-requisito: Git · Docker Desktop</sub>
 <br/>
-<b>🐳 Passo 2 — Subir Stack</b><br/><br/>
-<code>docker-compose up -d</code><br/><br/>
-<sub><i>~2 minutos · API + Dashboard + Prometheus + Grafana</i></sub>
 </td>
-<td align="center" width="5%"><b>→</b></td>
-<td align="center" width="26%">
+<td align="center" valign="middle" width="5%"><br/><b>→</b></td>
+<td align="center" valign="top" width="34%">
 <br/>
-<b>🎉 Passo 3 — Pronto!</b><br/><br/>
-<a href="http://localhost:8000/docs"><code>localhost:8000/docs</code></a><br/>
-<a href="http://localhost:8501"><code>localhost:8501</code></a><br/><br/>
-<sub><i>Swagger UI + Dashboard live</i></sub>
+<b>❷ Suba a stack completa</b>
+<br/><br/>
+<code>docker-compose up -d</code>
+<br/><br/>
+<sub>Sobe 4 containers em paralelo:</sub><br/>
+<sub><code>api</code> · <code>dashboard</code> · <code>prometheus</code> · <code>grafana</code></sub>
+<br/>
+</td>
+<td align="center" valign="middle" width="5%"><br/><b>→</b></td>
+<td align="center" valign="top" width="26%">
+<br/>
+<b>❸ Tudo no ar!</b>
+<br/><br/>
+<a href="http://localhost:8000/docs"><code>:8000/docs</code></a> — Swagger<br/>
+<a href="http://localhost:8501"><code>:8501</code></a> — Dashboard<br/>
+<a href="http://localhost:9090"><code>:9090</code></a> — Prometheus<br/>
+<a href="http://localhost:3000"><code>:3000</code></a> — Grafana
+<br/><br/>
+<sub><i>Cold start Render: ~30 s</i></sub>
+<br/>
 </td>
 </tr>
 </table>
@@ -326,53 +351,68 @@ sequenceDiagram
 <table>
 <tr>
 
-<td valign="top" width="50%">
+<td valign="top" width="33%">
 
 ### 🖥️ Trading Terminal
 
-[![Abrir Dashboard](https://img.shields.io/badge/▶%20Abrir%20ao%20Vivo-5B9DFF?style=for-the-badge&logo=streamlit&logoColor=white)](https://lstm-stock-dashboard.onrender.com)
+[![Abrir ao Vivo](https://img.shields.io/badge/▶%20Abrir%20ao%20Vivo-5B9DFF?style=for-the-badge&logo=streamlit&logoColor=white)](https://lstm-stock-dashboard.onrender.com)
 
-Terminal de trading completo com dados reais do Yahoo Finance. Atualização automática a cada sessão.
+Terminal de trading com dados reais do Yahoo Finance. 7 módulos interativos com atualização automática.
 
-| # | Módulo | Indicador |
-|---|--------|-----------|
-| 1 | 📈 Preço | Candlestick OHLCV |
-| 2 | 📉 Momentum | RSI 14 · MACD |
-| 3 | 〰️ Volatilidade | Bollinger Bands |
-| 4 | 🌀 Suporte | Fibonacci |
-| 5 | 🎲 Cenários | Monte Carlo |
-| 6 | 🗓️ Sazonalidade | Heatmap mensal |
-| 7 | 🧠 IA | Forecast LSTM |
+| # | Módulo | O que mostra |
+|---|--------|-------------|
+| 1 | 📈 **Preço** | Candlestick OHLCV diário |
+| 2 | 📉 **Momentum** | RSI 14 · MACD linha/sinal |
+| 3 | 〰️ **Volatilidade** | Bollinger Bands (2σ) |
+| 4 | 🌀 **Suporte** | Níveis Fibonacci retracement |
+| 5 | 🎲 **Cenários** | Monte Carlo 1 000 simulações |
+| 6 | 🗓️ **Sazonalidade** | Heatmap retorno mensal |
+| 7 | 🧠 **IA** | Forecast LSTM D+1 → D+5 |
 
 </td>
 
-<td valign="top" width="50%">
+<td valign="top" width="33%">
 
 ### 📊 Grafana Monitoring
 
-[![Iniciar Localmente](https://img.shields.io/badge/▶%20docker--compose%20up%20-d-F46800?style=for-the-badge&logo=grafana&logoColor=white)](http://localhost:3000)
+[![Iniciar Local](https://img.shields.io/badge/▶%20docker--compose%20up%20-d-F46800?style=for-the-badge&logo=grafana&logoColor=white)](http://localhost:3000)
 
-8 painéis pré-configurados — provisioning automático no startup.
+8 painéis provisionados automaticamente via JSON. Sem configuração manual.
 
-| # | Painel | Query |
-|---|--------|-------|
-| 1 | 🟢 Status Modelo | `max(model_loaded)` |
-| 2 | 📈 RPS | `rate(http_requests_total[1m])` |
-| 3 | ⏱️ Latência p50/95/99 | `histogram_quantile(...)` |
-| 4 | 🧠 Inferência ms | `rate(prediction_duration...)` |
-| 5 | 💾 RAM | `process_resident_memory_bytes` |
-| 6 | 🖥️ CPU | `process_cpu_seconds_total` |
-| 7 | 🔢 Previsões | `predictions_total` |
-| 8 | 💵 Últimos preços | `last_prediction_value` |
+| # | Painel | Métrica PromQL |
+|---|--------|----------------|
+| 1 | 🟢 **Status** | `max(model_loaded)` |
+| 2 | 📈 **RPS** | `rate(http_requests_total[1m])` |
+| 3 | ⏱️ **Latência** | `histogram_quantile(0.99,…)` |
+| 4 | 🧠 **Inferência** | `avg(prediction_duration_seconds)` |
+| 5 | 💾 **RAM** | `process_resident_memory_bytes` |
+| 6 | 🖥️ **CPU** | `rate(process_cpu_seconds_total[1m])` |
+| 7 | 🔢 **Previsões** | `predictions_total` |
+| 8 | 💵 **Último preço** | `last_prediction_value` |
+
+</td>
+
+<td valign="top" width="34%">
+
+### ⚡ Swagger UI
+
+[![Abrir Swagger](https://img.shields.io/badge/▶%20Abrir%20Swagger%20UI-85EA2D?style=for-the-badge&logo=swagger&logoColor=black)](https://pos-tech-mlet-fase-4.onrender.com/docs)
+
+Documentação interativa OpenAPI 3.1. Teste todos os endpoints diretamente no browser.
+
+| Método | Endpoint | Ação |
+|--------|----------|------|
+| `GET` | `/health` | Status e modelo |
+| `GET` | `/model/info` | Hiperparâmetros |
+| `POST` | `/predict` | Previsão por array |
+| `POST` | `/predict/symbol` | Previsão por ticker |
+| `GET` | `/api/chart/{s}` | OHLCV Yahoo proxy |
+| `GET` | `/metrics` | Scrape Prometheus |
 
 </td>
 
 </tr>
 </table>
-
-### ⚡ API — Swagger UI Interativo
-
-[![Abrir Swagger](https://img.shields.io/badge/▶%20Abrir%20Swagger%20UI-85EA2D?style=for-the-badge&logo=swagger&logoColor=black)](https://pos-tech-mlet-fase-4.onrender.com/docs)
 
 ---
 
@@ -677,9 +717,28 @@ docker-compose down                    # Para tudo
 
 ## 🧠 Treinamento do Modelo
 
+<table>
+<tr>
+<td><b>Símbolo</b></td><td><b>Início</b></td><td><b>Fim</b></td><td><b>Épocas máx.</b></td><td><b>Resultado</b></td>
+</tr>
+<tr>
+<td><code>AAPL</code></td><td><code>2018-01-01</code></td><td><code>2026-05-01</code></td><td><code>50</code></td><td>29 épocas · MAPE 2.48%</td>
+</tr>
+<tr>
+<td><code>PETR4.SA</code></td><td><code>2019-01-01</code></td><td><code>2026-05-01</code></td><td><code>50</code></td><td><i>personalizável</i></td>
+</tr>
+</table>
+
 ```bash
-python -m src.train                                                      # padrão: AAPL 2018–2026
+# Treino padrão — AAPL 2018–2026
+python -m src.train
+
+# Treino personalizado — qualquer ticker Yahoo Finance
 python -m src.train --symbol PETR4.SA --start 2019-01-01 --end 2026-05-01 --epochs 50
+
+# Helpers
+python -m src.evaluate   # MAE · RMSE · MAPE no conjunto de teste
+python -m src.predict    # previsão D+1 para o ticker atual
 ```
 
 ### Arquitetura da Rede Neural
@@ -886,15 +945,60 @@ docker-compose up -d   # stack completa (recomendado)
 ## 📊 Monitoramento
 
 <table>
-<tr><th>Métrica</th><th>Tipo</th><th>Descrição</th></tr>
-<tr><td><code>http_requests_total</code></td><td>Counter</td><td>Requisições por método, handler e status HTTP</td></tr>
-<tr><td><code>http_request_duration_seconds</code></td><td>Histogram</td><td>Latência completa de cada requisição</td></tr>
-<tr><td><code>predictions_total</code></td><td>Counter</td><td>Previsões por endpoint e status</td></tr>
-<tr><td><code>prediction_duration_seconds</code></td><td>Histogram</td><td>Tempo de inferência do modelo LSTM</td></tr>
-<tr><td><code>last_prediction_value</code></td><td>Gauge</td><td>Último preço previsto por símbolo (USD)</td></tr>
-<tr><td><code>model_loaded</code></td><td>Gauge</td><td><code>1</code> = modelo ativo · <code>0</code> = degradado</td></tr>
-<tr><td><code>process_resident_memory_bytes</code></td><td>Gauge</td><td>Uso de RAM</td></tr>
-<tr><td><code>process_cpu_seconds_total</code></td><td>Counter</td><td>CPU acumulado</td></tr>
+<tr>
+<th>Métrica</th>
+<th align="center">Tipo</th>
+<th>Labels</th>
+<th>Descrição</th>
+</tr>
+<tr>
+<td><code>http_requests_total</code></td>
+<td align="center"><img src="https://img.shields.io/badge/Counter-00C853?style=flat-square&logoColor=white"/></td>
+<td><sub><code>method</code> · <code>handler</code> · <code>status</code></sub></td>
+<td>Total de requisições HTTP recebidas</td>
+</tr>
+<tr>
+<td><code>http_request_duration_seconds</code></td>
+<td align="center"><img src="https://img.shields.io/badge/Histogram-5B9DFF?style=flat-square&logoColor=white"/></td>
+<td><sub><code>method</code> · <code>handler</code></sub></td>
+<td>Latência end-to-end de cada request</td>
+</tr>
+<tr>
+<td><code>predictions_total</code></td>
+<td align="center"><img src="https://img.shields.io/badge/Counter-00C853?style=flat-square&logoColor=white"/></td>
+<td><sub><code>endpoint</code> · <code>status</code></sub></td>
+<td>Previsões LSTM executadas</td>
+</tr>
+<tr>
+<td><code>prediction_duration_seconds</code></td>
+<td align="center"><img src="https://img.shields.io/badge/Histogram-5B9DFF?style=flat-square&logoColor=white"/></td>
+<td><sub><code>endpoint</code></sub></td>
+<td>Tempo de inferência do modelo LSTM (~87 ms)</td>
+</tr>
+<tr>
+<td><code>last_prediction_value</code></td>
+<td align="center"><img src="https://img.shields.io/badge/Gauge-FFD700?style=flat-square&logoColor=black"/></td>
+<td><sub><code>symbol</code></sub></td>
+<td>Último preço previsto por ticker (USD)</td>
+</tr>
+<tr>
+<td><code>model_loaded</code></td>
+<td align="center"><img src="https://img.shields.io/badge/Gauge-FFD700?style=flat-square&logoColor=black"/></td>
+<td><sub>—</sub></td>
+<td><code>1</code> = modelo ativo · <code>0</code> = degradado</td>
+</tr>
+<tr>
+<td><code>process_resident_memory_bytes</code></td>
+<td align="center"><img src="https://img.shields.io/badge/Gauge-FFD700?style=flat-square&logoColor=black"/></td>
+<td><sub>—</sub></td>
+<td>RAM do processo em bytes</td>
+</tr>
+<tr>
+<td><code>process_cpu_seconds_total</code></td>
+<td align="center"><img src="https://img.shields.io/badge/Counter-00C853?style=flat-square&logoColor=white"/></td>
+<td><sub>—</sub></td>
+<td>CPU acumulado em segundos</td>
+</tr>
 </table>
 
 <details>
@@ -916,14 +1020,23 @@ rate(prediction_errors_total[5m])
 ## ☁️ Deploy em Nuvem
 
 <table>
-<tr><th>Serviço</th><th>Runtime</th><th>URL de Produção</th></tr>
 <tr>
-  <td>⚡ API FastAPI</td><td>Docker</td>
-  <td><a href="https://pos-tech-mlet-fase-4.onrender.com">pos-tech-mlet-fase-4.onrender.com</a></td>
+<th align="center">Serviço</th>
+<th align="center">Container</th>
+<th align="center">Status</th>
+<th align="center">URL de Produção</th>
 </tr>
 <tr>
-  <td>🖥️ Dashboard Streamlit</td><td>Docker</td>
-  <td><a href="https://lstm-stock-dashboard.onrender.com">lstm-stock-dashboard.onrender.com</a></td>
+<td>⚡ <b>API FastAPI</b></td>
+<td><code>Dockerfile</code></td>
+<td align="center"><img src="https://img.shields.io/badge/●%20Online-00FF88?style=flat-square&logoColor=black"/></td>
+<td><a href="https://pos-tech-mlet-fase-4.onrender.com">pos-tech-mlet-fase-4.onrender.com</a></td>
+</tr>
+<tr>
+<td>🖥️ <b>Dashboard Streamlit</b></td>
+<td><code>Dockerfile.dashboard</code></td>
+<td align="center"><img src="https://img.shields.io/badge/●%20Live-5B9DFF?style=flat-square&logoColor=white"/></td>
+<td><a href="https://lstm-stock-dashboard.onrender.com">lstm-stock-dashboard.onrender.com</a></td>
 </tr>
 </table>
 
@@ -941,9 +1054,16 @@ rate(prediction_errors_total[5m])
 
 ## 🧪 Testes
 
+<div align="center">
+
+![Tests](https://img.shields.io/badge/12%20testes-passing-00C853?style=for-the-badge&logo=pytest&logoColor=white)
+![Suites](https://img.shields.io/badge/3%20suites-API%20·%20DataLoader%20·%20Preprocessor-5B9DFF?style=for-the-badge)
+
+</div>
+
 ```bash
-pytest tests/ -v --tb=short
-pytest tests/ -v --cov=src --cov-report=term-missing   # com cobertura
+pytest tests/ -v --tb=short                               # execução rápida
+pytest tests/ -v --cov=src --cov-report=term-missing      # com cobertura
 ```
 
 <details>
@@ -972,18 +1092,51 @@ tests/test_preprocessor.py::test_split_order      PASSED
 
 ## 🎬 Vídeo Demonstrativo
 
-[![Assistir Demo](https://img.shields.io/badge/Google%20Drive-▶%20Assistir%20Demonstração-4285F4?style=for-the-badge&logo=googledrive&logoColor=white)](https://drive.google.com/drive/folders/13oh-1vmyH5aKzemD9ClMUIB7JU9LFkaa?usp=sharing)
+<div align="center">
 
-Cobertura completa: arquitetura · dashboard ao vivo · Swagger UI · métricas LSTM · Prometheus + Grafana
+[![Assistir Demo](https://img.shields.io/badge/Google%20Drive-▶%20Assistir%20Demonstração%20Completa-4285F4?style=for-the-badge&logo=googledrive&logoColor=white)](https://drive.google.com/drive/folders/13oh-1vmyH5aKzemD9ClMUIB7JU9LFkaa?usp=sharing)
+
+| Cobertura do vídeo | |
+|---|:---:|
+| Arquitetura end-to-end | ✅ |
+| Dashboard ao vivo — 7 módulos | ✅ |
+| Swagger UI — teste de endpoints | ✅ |
+| Métricas LSTM e curva de treino | ✅ |
+| Prometheus + Grafana — 8 painéis | ✅ |
+
+</div>
 
 ---
 
 ## 👤 Autor
 
-**Dione Braga Ferreira** · Pós-Graduação em Machine Learning Engineering — FIAP · Tech Challenge Fase 4 · 2026
+<table>
+<tr>
+<td valign="top" width="50%">
+
+**Dione Braga Ferreira**
+
+Pós-Graduação em Machine Learning Engineering<br/>
+FIAP · Tech Challenge Fase 4 · 2026
 
 [![GitHub](https://img.shields.io/badge/GitHub-dionebraga-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/dionebraga)
 [![Email](https://img.shields.io/badge/Email-dionebraga.work%40gmail.com-EA4335?style=flat-square&logo=gmail&logoColor=white)](mailto:dionebraga.work@gmail.com)
+
+</td>
+<td valign="top" width="50%">
+
+| Entregável | Status |
+|---|:---:|
+| Modelo LSTM treinado | ✅ |
+| API REST em produção | ✅ |
+| Dashboard interativo | ✅ |
+| Monitoramento Prometheus/Grafana | ✅ |
+| Testes automatizados (12) | ✅ |
+| Vídeo demonstrativo | ✅ |
+
+</td>
+</tr>
+</table>
 
 ---
 
@@ -992,14 +1145,18 @@ Cobertura completa: arquitetura · dashboard ao vivo · Swagger UI · métricas 
 <br/>
 
 [![GitHub](https://img.shields.io/badge/GitHub-Repositório-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/dionebraga/Pos_Tech_MLET-Fase-4)
-[![Dashboard](https://img.shields.io/badge/Dashboard-Live-5B9DFF?style=for-the-badge&logo=streamlit&logoColor=white)](https://lstm-stock-dashboard.onrender.com)
-[![API](https://img.shields.io/badge/API-REST-00FF88?style=for-the-badge&logo=fastapi&logoColor=black)](https://pos-tech-mlet-fase-4.onrender.com)
-[![Swagger](https://img.shields.io/badge/Swagger-UI-85EA2D?style=for-the-badge&logo=swagger&logoColor=black)](https://pos-tech-mlet-fase-4.onrender.com/docs)
-[![Vídeo](https://img.shields.io/badge/Vídeo-Demo-FF0000?style=for-the-badge&logo=googledrive&logoColor=white)](https://drive.google.com/drive/folders/13oh-1vmyH5aKzemD9ClMUIB7JU9LFkaa?usp=sharing)
+[![Dashboard](https://img.shields.io/badge/Dashboard-●%20Live-5B9DFF?style=for-the-badge&logo=streamlit&logoColor=white)](https://lstm-stock-dashboard.onrender.com)
+[![API](https://img.shields.io/badge/API-●%20Online-00FF88?style=for-the-badge&logo=fastapi&logoColor=black)](https://pos-tech-mlet-fase-4.onrender.com)
+[![Swagger](https://img.shields.io/badge/Swagger-●%20Docs-85EA2D?style=for-the-badge&logo=swagger&logoColor=black)](https://pos-tech-mlet-fase-4.onrender.com/docs)
+[![Vídeo](https://img.shields.io/badge/Vídeo-●%20Demo-FF0000?style=for-the-badge&logo=googledrive&logoColor=white)](https://drive.google.com/drive/folders/13oh-1vmyH5aKzemD9ClMUIB7JU9LFkaa?usp=sharing)
 
 <br/>
 
-*Feito com ❤️ · TensorFlow · FastAPI · Streamlit · Prometheus · Grafana*
+```
+  2 093 pregões · LSTM 64+64 · 29 épocas · MAPE 2.48% · 97.52% acurácia · ~87ms inferência
+```
+
+*TensorFlow · Keras · FastAPI · Streamlit · Prometheus · Grafana · Docker · Render*
 
 **© 2026 Dione Braga Ferreira** · [MIT License](LICENSE)
 
