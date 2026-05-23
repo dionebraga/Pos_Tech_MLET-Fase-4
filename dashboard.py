@@ -904,14 +904,16 @@ def fetch_model_info() -> Optional[dict]:
 
 
 def market_is_open() -> tuple[bool, str]:
-    now_et = datetime.now(tz=ET)
-    is_weekday = now_et.weekday() < 5
+    # NYSE opera em ET; BRT = UTC-3, ET = UTC-4 (EDT) → NYSE abre 10:30 BRT / fecha 17:00 BRT
+    now_brt = datetime.now(tz=BRT)
+    now_et  = datetime.now(tz=ET)
+    is_weekday = now_brt.weekday() < 5
     h, m = now_et.hour, now_et.minute
-    after_open  = (h == 9 and m >= 30) or h >= 10
+    after_open   = (h == 9 and m >= 30) or h >= 10
     before_close = h < 16
     if is_weekday and after_open and before_close:
-        return True, "MARKET OPEN"
-    return False, "MARKET CLOSED"
+        return True, "NYSE ABERTA"
+    return False, "NYSE FECHADA"
 
 
 
@@ -1257,7 +1259,7 @@ st.markdown(
             <span class="status-item">DATA · <strong>{now.strftime('%a, %d %b %Y').upper()}</strong></span>
         </div>
         <div class="status-group">
-            <span class="status-item">TIME · <strong>{now.strftime('%H:%M:%S')}</strong></span>
+            <span class="status-item">BRT · <strong>{now.strftime('%H:%M:%S')}</strong></span>
             <span class="status-item">VOL · <strong>{int(df['Volume'].iloc[-1]/1_000_000)}M</strong></span>
         </div>
     </div>
@@ -1450,7 +1452,7 @@ with main_col:
         with wcol3:
             filtro_rsi = st.selectbox("RSI", ["Todas", "Sobrevendido (<30)", "Neutro", "Sobrecomprado (>70)"], label_visibility="collapsed")
         with wcol4:
-            st.markdown(f'<div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary);padding:8px 0;text-align:right;">⏱ {datetime.now().strftime("%H:%M:%S")}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary);padding:8px 0;text-align:right;">⏱ {datetime.now(tz=BRT).strftime("%H:%M:%S")} BRT</div>', unsafe_allow_html=True)
 
         wl_data = []
         with st.spinner("Analisando ativos..."):
