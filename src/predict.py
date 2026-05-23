@@ -3,6 +3,7 @@ Módulo de inferência — carrega modelo + scaler e faz previsões.
 
 Encapsula a lógica de previsão para reutilização tanto pela API quanto
 por scripts. Suporta previsão de 1 dia ou multi-step (recursiva).
+Inclui ModelRegistry para servir múltiplos tickers simultaneamente.
 """
 import json
 import logging
@@ -94,3 +95,62 @@ class StockPredictor:
             history.append(next_pred)
 
         return predictions
+
+
+class ModelRegistry:
+    """Carrega e mantém em cache um StockPredictor por ticker.
+
+    Busca modelos em ``models/{SYMBOL}/`` e cai de volta ao diretório
+    plano ``models/`` (modelo legado / padrão) quando não há subpasta.
+    """
+
+    def __init__(self, models_dir: str | Path, default_symbol: str) -> None:
+        self._dir = Path(models_dir)
+        self._default_symbol = default_symbol.upper()
+        self._cache: dict[str, StockPredictor] = {}
+
+    # ------------------------------------------------------------------ #
+    def get(self, symbol: str) -> "StockPredictor":
+        key = symbol.upper()
+        if key not in self._cache:
+            self._cache[key] = self._load(key)
+        return self._cache[key]
+
+    def _load(self, symbol: str) -> StockPredictor:
+        sym_dir = self._dir / symbol
+        if sym_dir.is_dir() and (sym_dir / "lstm_model.keras").exists():
+            return StockPredictor(
+                model_path=str(sym_dir / "lstm_model.keras"),
+                scaler_path=str(sym_dir / "scaler.pkl"),
+                metadata_path=str(sym_dir / "metadata.json"),
+            )
+        # Fallback: flat models/ directory (modelo padrão / legado)
+        flat = self._dir / "lstm_model.keras"
+        if flat.exists():
+            logger.info(
+                "Modelo por símbolo não encontrado para %s — usando modelo padrão.",
+                symbol,
+            )
+            return StockPredictor(
+                model_path=str(flat),
+                scaler_path=str(self._dir / "scaler.pkl"),
+                metadata_path=str(self._dir / "metadata.json"),
+            )
+        raise FileNotFoundError(
+            f"Nenhum modelo encontrado para {symbol}. "
+            "Execute `python scripts/train_all.py` para treinar."
+        )
+
+    # ------------------------------------------------------------------ #
+    def list_available(self) -> list[str]:
+        """Retorna símbolos com modelo treinado em subpastas de models/."""
+        return [
+            d.name
+            for d in sorted(self._dir.iterdir())
+            if d.is_dir() and (d / "lstm_model.keras").exists()
+        ]
+
+    # ------------------------------------------------------------------ #
+    @property
+    def default(self) -> StockPredictor:
+        return self.get(self._default_symbol)

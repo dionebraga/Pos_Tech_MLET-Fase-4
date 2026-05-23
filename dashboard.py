@@ -783,7 +783,21 @@ st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 # ============================================================================
 #  HELPERS
 # ============================================================================
-def _parse_yf_v8_chart(payload: dict) -> Optional[pd.DataFrame]:
+def _period_interval(period: str) -> str:
+    """Mapeia período de visualização para o melhor intervalo de candle."""
+    return {
+        "1d":  "1m",
+        "5d":  "5m",
+        "1mo": "30m",
+        "3mo": "1h",
+        "6mo": "1d",
+        "1y":  "1d",
+        "2y":  "1wk",
+        "5y":  "1wk",
+    }.get(period, "1d")
+
+
+def _parse_yf_v8_chart(payload: dict, interval: str = "1d") -> Optional[pd.DataFrame]:
     """Parse Yahoo Finance v8 chart JSON → OHLCV DataFrame."""
     try:
         result = payload["chart"]["result"][0]
@@ -791,51 +805,69 @@ def _parse_yf_v8_chart(payload: dict) -> Optional[pd.DataFrame]:
         quote = result["indicators"]["quote"][0]
         n = len(timestamps)
         _f = lambda v: float(v) if v is not None else float("nan")
+        _intraday = interval not in ("1d", "5d", "1wk", "1mo", "3mo")
+        dates = (
+            pd.to_datetime([pd.Timestamp(t, unit="s") for t in timestamps])
+            if _intraday
+            else pd.to_datetime([pd.Timestamp(t, unit="s").date() for t in timestamps])
+        )
         df = pd.DataFrame({
-            "Date": pd.to_datetime([pd.Timestamp(t, unit="s").date() for t in timestamps]),
+            "Date": dates,
             "Open":   [_f(v) for v in quote.get("open",   [None] * n)],
             "High":   [_f(v) for v in quote.get("high",   [None] * n)],
             "Low":    [_f(v) for v in quote.get("low",    [None] * n)],
             "Close":  [_f(v) for v in quote.get("close",  [None] * n)],
             "Volume": [float(v) if v is not None else 0.0 for v in quote.get("volume", [0] * n)],
         }).dropna(subset=["Close"])
-        return df if not df.empty else None
+        return None if df.empty else df
     except Exception:
         return None
 
 
-@st.cache_data(ttl=60)
-def fetch_market_data(ticker: str, period: str, _ts: int = 0) -> Optional[pd.DataFrame]:
-    """Fetch real OHLCV data. API proxy → yfinance+curl_cffi → yfinance direto."""
-    # 1. API proxy — funciona no Render pois a API acessa o Yahoo Finance normalmente
+def _normalize_df(df: pd.DataFrame) -> pd.DataFrame:
+    """Normaliza colunas de data (Datetime → Date) e remove timezone."""
+    df = df.reset_index()
+    if "Datetime" in df.columns and "Date" not in df.columns:
+        df = df.rename(columns={"Datetime": "Date"})
+    if "Date" in df.columns and pd.api.types.is_datetime64tz_dtype(df["Date"]):
+        df["Date"] = df["Date"].dt.tz_convert(None)
+    return df
+
+
+@st.cache_data(ttl=300)
+def fetch_market_data(ticker: str, period: str, interval: str = "1d", ts: int = 0) -> Optional[pd.DataFrame]:
+    """Fetch OHLCV. Suporta intervalos intraday (1m, 5m, 30m, 1h) e diário."""
+    # 1. API proxy
     try:
         r = requests.get(
             f"{API_URL}/api/chart/{ticker}",
-            params={"range": period, "interval": "1d"},
+            params={"range": period, "interval": interval},
             timeout=15,
         )
         if r.status_code == 200:
-            df = _parse_yf_v8_chart(r.json())
+            df = _parse_yf_v8_chart(r.json(), interval=interval)
             if df is not None:
                 return df
     except Exception:
         pass
 
-    # 2. yfinance com curl_cffi (impersonação de browser)
+    # 2. yfinance com curl_cffi
     if HAS_CURL_CFFI:
         try:
             session = cffi_requests.Session(impersonate="chrome")
-            df = yf.Ticker(ticker, session=session).history(period=period, auto_adjust=False)
+            df = yf.Ticker(ticker, session=session).history(
+                period=period, interval=interval, auto_adjust=False
+            )
             if not df.empty:
-                return df.reset_index()
+                return _normalize_df(df)
         except Exception:
             pass
 
     # 3. yfinance direto
     try:
-        df = yf.Ticker(ticker).history(period=period, auto_adjust=False)
+        df = yf.Ticker(ticker).history(period=period, interval=interval, auto_adjust=False)
         if not df.empty:
-            return df.reset_index()
+            return _normalize_df(df)
     except Exception:
         pass
 
@@ -913,11 +945,17 @@ with st.sidebar:
     st.markdown('<div class="nav-label">Janela Temporal</div>', unsafe_allow_html=True)
     period = st.selectbox(
         "Período",
-        ["1mo", "3mo", "6mo", "1y", "2y", "5y"],
-        index=2,
+        ["1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y"],
+        index=4,
         format_func=lambda x: {
-            "1mo": "1 MÊS", "3mo": "3 MESES", "6mo": "6 MESES",
-            "1y": "1 ANO", "2y": "2 ANOS", "5y": "5 ANOS",
+            "1d":  "HOJE · 1min",
+            "5d":  "5 DIAS · 5min",
+            "1mo": "1 MÊS · 30min",
+            "3mo": "3 MESES · 1h",
+            "6mo": "6 MESES · diário",
+            "1y":  "1 ANO · diário",
+            "2y":  "2 ANOS · semanal",
+            "5y":  "5 ANOS · semanal",
         }[x],
         label_visibility="collapsed",
     )
@@ -978,8 +1016,15 @@ if refresh_rate != "Off":
 # ============================================================================
 #  DADOS
 # ============================================================================
-_data_ts = int(datetime.now().timestamp() // 60)
-df = fetch_market_data(ticker, period, _ts=_data_ts)
+_interval = _period_interval(period)
+_intraday = _interval in ("1m", "5m", "30m", "1h")
+_refresh_s = (
+    max({"5s": 15, "10s": 15, "30s": 30}.get(refresh_rate, 60), 15)
+    if _intraday
+    else max({"5s": 60, "10s": 60, "30s": 60}.get(refresh_rate, 120), 60)
+)
+_data_ts = int(datetime.now().timestamp() // _refresh_s)
+df = fetch_market_data(ticker, period, interval=_interval, ts=_data_ts)
 if df is None or df.empty:
     st.error(
         f"❌ Dados indisponíveis para **{ticker}**. "
@@ -1037,7 +1082,7 @@ def calc_rsi(series: pd.Series, period: int = 14) -> float:
     loss = (-delta.where(delta < 0, 0)).rolling(period).mean()
     rs = gain / loss
     rsi = 100 - (100 / (1 + rs))
-    return float(rsi.iloc[-1]) if not pd.isna(rsi.iloc[-1]) else 50.0
+    return 50.0 if pd.isna(rsi.iloc[-1]) else float(rsi.iloc[-1])
 
 def calc_macd(series: pd.Series) -> tuple[float, float, float]:
     ema12 = series.ewm(span=12).mean()
@@ -1153,7 +1198,7 @@ _TAPE_TICKERS = [
     ("S&P500", "^GSPC"), ("USD/BRL", "USDBRL=X"), ("OURO", "GC=F"),
 ]
 
-@st.cache_data(ttl=120, show_spinner=False)
+@st.cache_data(ttl=30, show_spinner=False)
 def _fetch_tape_prices() -> list:
     results = []
     for label, sym in _TAPE_TICKERS:
@@ -1411,7 +1456,7 @@ with main_col:
         with st.spinner("Analisando ativos..."):
             for sym in watchlist_tickers:
                 try:
-                    wdf = fetch_market_data(sym, "3mo", _ts=_data_ts)
+                    wdf = fetch_market_data(sym, "3mo", interval="1d", ts=_data_ts)
                     if wdf is None or wdf.empty:
                         continue
                     wclose = float(wdf["Close"].iloc[-1])
@@ -1482,7 +1527,7 @@ with main_col:
                         Análise Técnica
                         <span class="panel-title-tag">CANDLES · MA · BB</span>
                     </div>
-                    <div class="panel-meta">{ticker} · {period.upper()}</div>
+                    <div class="panel-meta">{ticker} · {period.upper()} · {_interval.upper()}/candle</div>
                 </div>
             """,
             unsafe_allow_html=True,

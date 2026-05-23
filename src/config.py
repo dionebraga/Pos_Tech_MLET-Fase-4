@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     TRAIN_SPLIT: float = 0.8       # 80% treino, 20% teste
 
     # ---------- Caminhos ----------
+    MODELS_DIR: str = str(PROJECT_ROOT / "models")
     MODEL_PATH: str = str(PROJECT_ROOT / "models" / "lstm_model.keras")
     SCALER_PATH: str = str(PROJECT_ROOT / "models" / "scaler.pkl")
     METADATA_PATH: str = str(PROJECT_ROOT / "models" / "metadata.json")

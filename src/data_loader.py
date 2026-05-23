@@ -51,31 +51,29 @@ def fetch_stock_data(
 def fetch_recent_window(symbol: str, window_size: int = 60) -> pd.Series:
     """Busca os últimos `window_size` preços de fechamento para previsão.
 
-    Args:
-        symbol: Ticker da ação (ex: AAPL, PETR4.SA).
-        window_size: Quantidade de preços de fechamento necessários.
-
-    Returns:
-        pd.Series com window_size preços de fechamento (mais antigo → recente).
+    Tenta primeiro com period="6mo" (mais estável no yfinance).
+    Cai de volta para range de datas se retornar vazio.
     """
-    end = pd.Timestamp.now()
-    start = end - pd.DateOffset(days=window_size * 2)  # folga para fins de semana/feriados
-
     logger.info("Buscando janela recente para %s (%d dias)", symbol, window_size)
     ticker = yf.Ticker(symbol)
-    df = ticker.history(start=start.strftime("%Y-%m-%d"), end=end.strftime("%Y-%m-%d"))
+
+    df = ticker.history(period="6mo")
+    if df.empty:
+        end = pd.Timestamp.now()
+        start = end - pd.DateOffset(days=window_size * 2)
+        df = ticker.history(start=start.strftime("%Y-%m-%d"), end=end.strftime("%Y-%m-%d"))
 
     if df.empty:
         raise ValueError(
             f"Nenhum dado retornado para '{symbol}'. "
-            "Verifique o ticker e conectividade."
+            "Verifique o ticker e a conectividade com o Yahoo Finance."
         )
 
     closes = df["Close"]
     if len(closes) < window_size:
         raise ValueError(
             f"Apenas {len(closes)} registros disponíveis para '{symbol}', "
-            f"mas são necessários {window_size}. Tente um ticker com mais dados."
+            f"mas são necessários {window_size}."
         )
 
     return closes.iloc[-window_size:]

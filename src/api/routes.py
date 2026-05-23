@@ -848,10 +848,21 @@ def predict_from_symbol(
 ) -> SymbolPredictResponse:
     """
     Busca o histórico recente do yfinance e prevê o(s) próximo(s) preço(s).
+    Usa o modelo específico do ticker quando disponível (N modelos × N ações).
     """
-    predictor = request.app.state.predictor
-    if predictor is None:
+    registry = getattr(request.app.state, "registry", None)
+    if registry is None:
         raise HTTPException(status_code=503, detail="Modelo não carregado.")
+    try:
+        predictor = registry.get(payload.symbol)
+    except FileNotFoundError as e:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"Modelo para '{payload.symbol}' não encontrado. "
+                f"Execute `python scripts/train_all.py --symbols {payload.symbol}` para treinar."
+            ),
+        ) from e
 
     try:
         closes = fetch_recent_window(payload.symbol, predictor.window_size)

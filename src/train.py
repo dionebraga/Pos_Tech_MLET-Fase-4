@@ -50,6 +50,16 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+
+    # Deriva paths por símbolo automaticamente quando não sobrescritos pelo usuário
+    symbol_dir = Path(settings.MODELS_DIR) / args.symbol
+    if args.model_path == settings.MODEL_PATH:
+        args.model_path = str(symbol_dir / "lstm_model.keras")
+    if args.scaler_path == settings.SCALER_PATH:
+        args.scaler_path = str(symbol_dir / "scaler.pkl")
+    if args.metadata_path == settings.METADATA_PATH:
+        args.metadata_path = str(symbol_dir / "metadata.json")
+
     logger.info("=" * 60)
     logger.info(" TREINAMENTO LSTM - PREVISÃO DE PREÇO DE AÇÕES")
     logger.info("=" * 60)

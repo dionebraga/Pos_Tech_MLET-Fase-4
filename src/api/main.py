@@ -20,7 +20,7 @@ from src import __version__
 from src.api.routes import router
 from src.api.monitoring import MODEL_LOADED, HTTP_REQUESTS_TOTAL, HTTP_REQUEST_DURATION, initialize_metrics
 from src.config import settings
-from src.predict import StockPredictor
+from src.predict import ModelRegistry
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -42,15 +42,16 @@ async def lifespan(app: FastAPI):
     app.state._started_at = datetime.now()
     initialize_metrics()
     try:
-        predictor = StockPredictor(
-            model_path=settings.MODEL_PATH,
-            scaler_path=settings.SCALER_PATH,
-            metadata_path=settings.METADATA_PATH,
+        registry = ModelRegistry(
+            models_dir=settings.MODELS_DIR,
+            default_symbol=settings.DEFAULT_SYMBOL,
         )
-        app.state.predictor = predictor
+        predictor = registry.default  # pré-carrega modelo padrão
+        app.state.registry = registry
+        app.state.predictor = predictor  # backward-compat (dashboard / health)
         MODEL_LOADED.set(1)
         logger.info(
-            "Modelo carregado — symbol=%s, window=%d, metrics=%s",
+            "ModelRegistry pronto — symbol=%s, window=%d, metrics=%s",
             predictor.metadata.get("symbol", "?"),
             predictor.window_size,
             predictor.metadata.get("metrics", {}),
@@ -58,13 +59,15 @@ async def lifespan(app: FastAPI):
     except FileNotFoundError:
         logger.warning(
             "Modelo não encontrado em %s — API rodando em modo degradado. "
-            "Execute `python -m src.train` primeiro.",
-            settings.MODEL_PATH,
+            "Execute `python scripts/train_all.py` primeiro.",
+            settings.MODELS_DIR,
         )
+        app.state.registry = None
         app.state.predictor = None
         MODEL_LOADED.set(0)
     except Exception as exc:
-        logger.exception("Falha ao carregar modelo: %s", exc)
+        logger.exception("Falha ao inicializar ModelRegistry: %s", exc)
+        app.state.registry = None
         app.state.predictor = None
         MODEL_LOADED.set(0)
 

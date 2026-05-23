@@ -1,0 +1,20 @@
+{
+  "symbol": "MSFT",
+  "start_date": "2018-01-01",
+  "end_date": "2024-07-20",
+  "window_size": 60,
+  "lstm_units_1": 64,
+  "lstm_units_2": 64,
+  "dropout_rate": 0.2,
+  "epochs_trained": 3,
+  "batch_size": 32,
+  "learning_rate": 0.001,
+  "train_samples": 1269,
+  "test_samples": 318,
+  "metrics": {
+    "mae": 9.449438095092773,
+    "rmse": 11.711779594421387,
+    "mape": 2.5867413729429245
+  },
+  "trained_at": "2026-05-23T16:21:03.993267+00:00"
+}
