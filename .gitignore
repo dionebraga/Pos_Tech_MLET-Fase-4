@@ -32,14 +32,8 @@ ENV/
 *.log
 logs/
 
-# Modelos (versionados no Hugging Face Model Hub)
-models/*.keras
-models/*.h5
-models/*.pkl
-
 # Dados brutos
 data/raw/
-*.csv
 
 # Docker
 .docker/
