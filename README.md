@@ -93,51 +93,42 @@
 
 ## ✨ Destaques do Projeto
 
-<br/>
-
 <table>
 <tr>
-
-<td align="center" valign="top" width="25%">
-<br/>
-<b>🧠 Deep Learning Real</b>
+<th align="center" width="25%">🧠 Deep Learning Real</th>
+<th align="center" width="25%">🚀 Pronto para Produção</th>
+<th align="center" width="25%">📊 Observabilidade Total</th>
+<th align="center" width="25%">🖥️ Terminal de Trading</th>
+</tr>
+<tr>
+<td align="center" valign="top">
+LSTM 2×64 · Split 80/20 temporal sem <i>data leakage</i> · EarlyStopping · ReduceLROnPlateau · ModelCheckpoint
 <br/><br/>
-LSTM 2×64 · Split 80/20 temporal sem <i>data leakage</i> · EarlyStopping · ReduceLROnPlateau · ModelCheckpoint · MAPE <b>2.48%</b>
+MAPE <b>2.48%</b> · Acurácia <b>97.52%</b>
 <br/><br/>
-<sub><code>TensorFlow 2.17</code> · <code>Keras 3.x</code> · <code>scikit-learn</code></sub>
-<br/>
+<sub>TensorFlow 2.17 · Keras 3.x · scikit-learn</sub>
 </td>
-
-<td align="center" valign="top" width="25%">
-<br/>
-<b>🚀 Pronto para Produção</b>
+<td align="center" valign="top">
+Docker Compose · deploy automático no Render · lifespan handler · Pydantic v2 · logging estruturado · retry em cold start
 <br/><br/>
-Docker Compose · deploy automático no Render · lifespan handler · Pydantic v2 · logging estruturado · retry em cold start · <b>0 downtime</b>
+<b>0 downtime</b> · health check em todos os endpoints
 <br/><br/>
-<sub><code>FastAPI</code> · <code>Uvicorn</code> · <code>Docker</code> · <code>Render</code></sub>
-<br/>
+<sub>FastAPI · Uvicorn · Docker · Render</sub>
 </td>
-
-<td align="center" valign="top" width="25%">
-<br/>
-<b>📊 Observabilidade Total</b>
+<td align="center" valign="top">
+Middleware HTTP registra RPS · latência p50/p95/p99 · inferência LSTM · RAM · CPU
 <br/><br/>
-Middleware HTTP · RPS · latência p50/p95/p99 · inferência LSTM · RAM · CPU — <b>8 painéis</b> Grafana auto-provisioned
+<b>8 painéis</b> Grafana auto-provisioned via JSON
 <br/><br/>
-<sub><code>Prometheus</code> · <code>Grafana</code> · <code>prometheus-client</code></sub>
-<br/>
+<sub>Prometheus · Grafana · prometheus-client</sub>
 </td>
-
-<td align="center" valign="top" width="25%">
-<br/>
-<b>🖥️ Terminal de Trading</b>
+<td align="center" valign="top">
+<b>7 módulos interativos</b>: Candlestick · RSI 14 · MACD · Bollinger Bands · Fibonacci · Monte Carlo
 <br/><br/>
-<b>7 módulos</b>: Candlestick · RSI 14 · MACD · Bollinger Bands · Fibonacci · Monte Carlo · Forecast LSTM D+1 → D+5
+Forecast LSTM <b>D+1 → D+5</b> em tempo real
 <br/><br/>
-<sub><code>Streamlit</code> · <code>Plotly</code> · <code>yfinance ≥1.x</code></sub>
-<br/>
+<sub>Streamlit · Plotly · yfinance ≥1.x</sub>
 </td>
-
 </tr>
 </table>
 
@@ -147,39 +138,37 @@ Middleware HTTP · RPS · latência p50/p95/p99 · inferência LSTM · RAM · CP
 
 <table>
 <tr>
-<td align="center" valign="top" width="30%">
+<th align="center" width="40%">❶ Clone o repositório</th>
+<th align="center" width="3%"></th>
+<th align="center" width="37%">❷ Suba a stack</th>
+<th align="center" width="3%"></th>
+<th align="center" width="17%">❸ Pronto!</th>
+</tr>
+<tr>
+<td align="center" valign="top">
 <br/>
-<b>❶ Clone o repositório</b>
-<br/><br/>
 <code>git clone https://github.com/dionebraga/Pos_Tech_MLET-Fase-4.git</code><br/>
 <code>cd tech-challenge-fase4</code>
 <br/><br/>
 <sub>Pré-requisito: Git · Docker Desktop</sub>
-<br/>
 </td>
-<td align="center" valign="middle" width="5%"><br/><b>→</b></td>
-<td align="center" valign="top" width="34%">
+<td align="center"><b>→</b></td>
+<td align="center" valign="top">
 <br/>
-<b>❷ Suba a stack completa</b>
-<br/><br/>
 <code>docker-compose up -d</code>
 <br/><br/>
 <sub>Sobe 4 containers em paralelo:</sub><br/>
-<sub><code>api</code> · <code>dashboard</code> · <code>prometheus</code> · <code>grafana</code></sub>
-<br/>
+<sub>api · dashboard · prometheus · grafana</sub>
 </td>
-<td align="center" valign="middle" width="5%"><br/><b>→</b></td>
-<td align="center" valign="top" width="26%">
+<td align="center"><b>→</b></td>
+<td align="center" valign="top">
 <br/>
-<b>❸ Tudo no ar!</b>
-<br/><br/>
-<a href="http://localhost:8000/docs"><code>:8000/docs</code></a> — Swagger<br/>
-<a href="http://localhost:8501"><code>:8501</code></a> — Dashboard<br/>
-<a href="http://localhost:9090"><code>:9090</code></a> — Prometheus<br/>
-<a href="http://localhost:3000"><code>:3000</code></a> — Grafana
+<a href="http://localhost:8000/docs">localhost:8000/docs</a><br/>
+<a href="http://localhost:8501">localhost:8501</a><br/>
+<a href="http://localhost:9090">localhost:9090</a><br/>
+<a href="http://localhost:3000">localhost:3000</a>
 <br/><br/>
 <sub><i>Cold start Render: ~30 s</i></sub>
-<br/>
 </td>
 </tr>
 </table>
